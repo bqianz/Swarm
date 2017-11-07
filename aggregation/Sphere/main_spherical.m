@@ -123,6 +123,8 @@ end
 
 %% plot equilibirum
 
+
+
 % set(H,{'xdata','ydata','zdata'},{X,Y,Z});
 % title(['t = ' num2str(k*dt)]);
 % 
@@ -136,10 +138,27 @@ end
 % density = colour_density_sph(th,phi);
 % H = scatter3(X,Y,Z,5,density*50,'filled');
 % 
-% figure(2)
-% plot(1:N,density,'*');
-% title('Density at equilibrium');
-% ylabel('density');
+
+
+%%
+[mean_short, nearest_dist,farthest_dist] = mean_shortest_distance(th,phi);
+density = colour_density_sph(th,phi,mean_short);
+
+hold on;
+H = scatter3(X,Y,Z,5,density*50,'filled');
+title(['t = ' num2str(k*dt)]);
+
+%%
+figure(2);
+plot(1:N,density,'.');
+title('Density at equilibrium');
+ylabel('density');
+
+figure(3)
+plot(1:N, nearest_dist,'.');
+title('Distance to nearest particle');
+ylabel('distance');
+
 
 
 

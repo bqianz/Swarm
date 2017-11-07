@@ -86,8 +86,6 @@ pause;
 dth=zeros(N,1);
 dphi=zeros(N,1);
 
-t=0;
-
 for k=1:step_num
     
     % actual particles

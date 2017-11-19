@@ -1,24 +1,24 @@
 %% 2-sphere: potential giving uniform density distribution at equilibrium
 clear, close all;
-global N th_fine phi_fine hyp th_coarse phi_coarse Area n N_fine;
+% global N th_fine phi_fine hyp th_coarse phi_coarse Area n N_fine;
 
 %% Radius and number of particles
 
-
-N = 100;
+tic;
+N = 200;
 C = 1/(4*pi);
 q = 1;
 
 %% time-step
-dt=10^-2;
-tmax=1000;
+dt=10^-1; % initial dt
+tmax=10^8;
 step_num=ceil(tmax/dt);
 % dt = tmax/step_num;
 % frame_skip = floor(step_num/200);
 frame_skip = 100;
 %% initial condition
 
-[phi,th] = give_initial(N,'regular_duplicate');
+[phi,th] = give_initial(N,'tall_far');
 
 
 %% Plotting intial state
@@ -33,54 +33,12 @@ z_lo = (1-cosh(th_up)*0.1);
 axis([-xy_lim, xy_lim,-xy_lim, xy_lim,z_lo,z_up]);
 
 %% plot hyperboloid
-figure(1);
-[x,y,z,th_fine,phi_fine]=hyperboloid(th_up,N_fine);
 
-hyp = surfl(x,y,z);
-% set(hyp, 'FaceAlpha', 1)
-shading interp;
-set(hyp,'edgecolor','none');
-
-axis square;
-
-az = 45;
-el = 20;
-% el = -90;
-view(az, el);
 hold off;
 
-%% plot in 2D;
-% figure(2);
-% % G = plot(th,sinh(th).*phi,'.');
-% [XX,YY] = pol2cart(phi,sqrt(2*(cosh(th)-1)));
-% G = plot(XX,YY,'.'); hold on;
-% % xlabel('\theta');
-% % ylabel('sin(\theta)\phi');
-% title('t = 0');
-% ax=gca;
-% axis(ax,'equal');
-% 
-% % [x_center, y_center] = pol2cart(mean(phi), mean(sqrt(2*(cosh(th)-1))));
-% % plot(x_center,y_center,'*');
-% hold off;
-
-% figure(2);
-% z = tanh(th/2).*exp(1i*phi);
-% G = plot(real(z),imag(z),'.'); hold on;
-% % xlabel('\theta');
-% % ylabel('sin(\theta)\phi');
-% title('Stereographic Projection');
-% ax=gca;
-% axis(ax,'equal');
-% 
-% % [x_center, y_center] = pol2cart(mean(phi), mean(sqrt(2*(cosh(th)-1))));
-% % plot(x_center,y_center,'*');
-% hold off;
-
 pause;
- 
 
-% press any key to continue
+
 
 %% Forward Euler
 dth=zeros(N,1);
@@ -88,7 +46,15 @@ dphi=zeros(N,1);
 
 t=0;
 
-for k=1:step_num
+v_norm = 1;
+
+k = 1; %step number
+
+
+while t < tmax;
+    if v_norm < 10^-3
+        dt = 0.2;
+    end
     
     % actual particles
     for i=1:N
@@ -116,17 +82,8 @@ for k=1:step_num
                 dzdth = sinh_th_i*cosh_th_j - cosh_th_i*sinh_th_j*cos(phi_i-phi_j);
                 dzdphi = sinh_th_i*sinh_th_j*sin(phi_i-phi_j);
                 
-                % sin potential
-                % dK/dz
-                %                 dKdz = -1/(4*pi)/(sinh(rho/2).*cosh(rho/2).*sqrt(z^2-1) )...
-                %                     + C*coth(rho)./sqrt(z^2-1);
-                
-                % % variable q
                 dKdz = -1/(4*pi)/(sinh(rho/2).*cosh(rho/2).*sqrt(z^2-1) )...
                     + C*coth(rho.^q).*rho.^(q-1)./sqrt(z^2-1);
-                
-                % % only attraction
-                % dKdz = C*coth(rho.^q).*rho.^(q-1)./sqrt(z^2-1);
                 
                 sum_th = sum_th + dKdz.*dzdth;
                 sum_phi = sum_phi + dKdz.*dzdphi./sinh_th_i;
@@ -136,70 +93,61 @@ for k=1:step_num
         dphi(i)=-sum_phi/N;
     end
     
-    
-    
-    % existing particles
+    k=k+1;
+    t = t + dt;
     th = th + dt*dth;
     phi = phi + dt*dphi;
     phi=mod(phi,2*pi);
     [X,Y,Z] = hyp2cart_unit(th,phi);
     
-    
-    % stops if velocity is too big or small
-    if norm([dth;dphi],Inf) < dt*10^-3;
-        disp(['Speed very small at t = ' num2str(dt*k-1)]);
-        break;
-    elseif norm([dth;dphi],Inf) > 10^6
-        disp(['Speed blow up at t = ' num2str(dt*k)]);
-        break;
+    if mod(k,10)==0
+        v_norm = norm([dth;dphi]);
+        disp(['v_inf = ' num2str(v_norm)]);
+        disp(['t = ' num2str(t)]);
+        disp([num2str(k) '-th step']);
+        disp(['dt = ' num2str(dt)]);
+        toc
+        % stops if velocity is too big or small
+        if v_norm < 10^-4;
+            disp(['Speed very small at t = ' num2str(dt*k-1)]);
+            break;
+        elseif v_norm > 10^6
+            disp(['Speed blow up at t = ' num2str(dt*k)]);
+            break;
+        end
     end
     
-    if mod(k,frame_skip)==0
-        % plot on hyperboloid
-        set(H,{'xdata','ydata','zdata'},{X,Y,Z});
-        title(['t = ' num2str(k*dt) ', v inf-norm = ' num2str(norm([dth;dphi],Inf))]);
-        
-        
-        % plot on 2D
-%         [XX,YY] = pol2cart(phi,sqrt(2*(cosh(th)-1)));
-%         set(G,{'xdata','ydata'},{XX,YY});
-%         title(['t = ' num2str(k*dt) ', v inf-norm = ' num2str(norm([dth;dphi],Inf))]);
-%         z = tanh(th/2).*exp(1i*phi);
-%         set(G,{'xdata','ydata'},{real(z),imag(z)});
-        
-        drawnow;
-    end
 end
 
 %% plot equilibirum
-
-% set(H,{'xdata','ydata','zdata'},{X,Y,Z});
-% title(['t = ' num2str(k*dt) ', v inf-norm = ' num2str(norm([dth;dphi],Inf))]);
-
-%% plot distance between pairs
-
-nearest_dist=zeros(1,N);
-farthest_dist=zeros(1,N);
-for i = 1:N
-    th1 = th(i);
-    phi1 = phi(i);
-    temp = sort(acosh(cosh(th1)*cosh(th) - sinh(th1)*sinh(th).*cos(phi1 - phi)));
-    nearest_dist(i) = temp(2);
-    farthest_dist(i) = temp(end);
-end
-figure(3);
-plot(1:N, nearest_dist,'.');
-title('Minimum distance from near by particle');
-xlabel('particle label')
-ylabel('distance');
-
-figure(4);
-plot(1:N, farthest_dist,'.');
-title('Maximum distance');
-xlabel('particle label')
-ylabel('distance');
+[mean_short, nearest_dist,~] = mean_shortest_distance_hyp(th,phi);
+density = colour_density_hyp(th,phi,mean_short);
 
 
-        
+figure(1);
+[x,y,z,th_fine,phi_fine]=hyperboloid(th_up);
+
+hyp = surfl(x,y,z);
+% set(hyp, 'FaceAlpha', 1)
+shading interp;
+set(hyp,'edgecolor','none');
+
+axis square;
+
+az = 45;
+el = 20;
+% el = -90;
+view(az, el);
+hold on;
+H = scatter3(X,Y,Z,5,density*1000,'filled');
+title(['t = ' num2str(t) ', v inf-norm = ' num2str(norm([dth;dphi],Inf))]);
+
+
+figure;
+plot(1:N,density,'.');
+title('Density at equilibrium');
+ylabel('density');
+
+
 
 

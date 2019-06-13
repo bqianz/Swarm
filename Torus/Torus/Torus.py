@@ -5,6 +5,8 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 from matplotlib.path import Path
 from numpy import linalg as LA
+import operator
+from decimal import Decimal
 
 def find_neighbours(current,n):
 
@@ -69,29 +71,50 @@ def Dijkstra(n,start,end,temp):
     ph_g = np.asarray(ph_g)
     return th_g, ph_g
 
-
-
 def tor2cart(theta, phi, c, a):
     x = (c + a*np.cos(theta)) * np.cos(phi)
     y = (c + a*np.cos(theta)) * np.sin(phi)
     z = a * np.sin(theta)
     return x, y, z
 
+def periodic_op_sc(a,b,op_func,period):
+    if abs(b-a) > period / 2:
+        if a < b:
+            a = a + period
+        else:
+            b = b + period
+    return op_func(a,b)
+
+def periodic_operation(arr1, arr2, op_func, period):
+    result = np.copy(arr1)
+    for i in range(arr1.size):
+        result[i] = periodic_op_sc(arr1[i],arr2[i],op_func,period)
+    return result
+
+def periodic_caliberate(arr, period):
+    result = np.copy(arr)
+    for i in range(arr.size):
+        result[i] = float(Decimal(arr[i]) % Decimal(period))
+    return result
 
 def functional_iteration(th,ph,a,c):
-    ph_diff = ph[2:] - ph[0:-2]
-    th_diff = th[2:] - th[0:-2]
+    period = 2 * math.pi
+
+    ph_diff = periodic_operation(ph[2:], ph[0:-2], operator.sub, period)
+    th_diff = periodic_operation(th[2:], th[0:-2], operator.sub, period)
+    ph_sum = periodic_operation(ph[2:], ph[0:-2], operator.add, period)
+    th_sum = periodic_operation(th[2:], th[0:-2], operator.add, period)
 
     new_ph = np.copy(ph)
+    frac1 = np.divide(a * np.sin(th), c + a * np.cos(th))
 
-    term1 = np.divide(a * np.sin(th), c + a * np.cos(th))
-    new_ph[1:-1] = (ph[2:] + ph[0:-2])/2 + np.multiply( term1[1:-1], np.multiply( ph_diff, th_diff )) / 4
+    new_ph[1:-1] = ph_sum/2 + np.multiply( frac1[1:-1], np.multiply( ph_diff, th_diff )) / 4
 
     new_th = np.copy(th)
-    term2 = np.multiply(np.sin(th)/a, c + a*np.cos(th))
-    new_th[1:-1] = (th[2:] + th[0:-2])/2 + np.multiply( term2[1:-1] , np.multiply(ph_diff,ph_diff) ) / 8
+    frac2 = np.multiply(np.sin(th)/a, c + a*np.cos(th))
+    new_th[1:-1] = th_sum/2 + np.multiply( frac2[1:-1] , np.multiply(ph_diff,ph_diff) ) / 8
 
-    return new_th, new_ph
+    return periodic_caliberate(new_th, period), periodic_caliberate(new_ph, period)
 
 
 def draw_base(x,y,z,xv,yv,zv):
@@ -106,44 +129,77 @@ def draw_base(x,y,z,xv,yv,zv):
     ax.scatter(xv, yv, zv, c='r')
     return fig, ax
 
-def initial_path(n,start,end,temp):
-    half_th = int(n/2)
-
-    th_s = start[0]
-    th_e = end[0]
-    ph_s = start[1]
-    ph_e = end[1]
-    
-    if abs(th_s - th_e) < half_th:
-        # go through half_th
-        if th_s < th_e:
-            th_seg1 = range(start[0],half_th)
-            th_seg2 = range(half_th,end[0])
+def general_segment(a,b,n):
+    if a==b:
+        return []
+    half = int(n/2)
+    s = np.sign(b-a)
+    temp = np.arange(a,b,s)
+    if temp.size > half:
+        return list(np.arange(a,b-s*n,-s) % n)
     else:
-        # go through th = 0
-        ph_seg = 0
+        return list(temp % n)
 
-    seg1 = range(start[0],half_th)
-    seg2 = range(start[1],end[1])
-    seg3 = range(half_th,end[0])
+def initial_path(n,start,end,temp):
+    half = int(n/2)
 
-    th_ind = list(seg1) + [half_th for i in seg2] + list(seg3) + [end[0]]
-    ph_ind = [start[1] for i in seg1] + list(seg2) + [end[1] for i in seg3] + [end[1]]
-    th = temp[np.array(th_ind)]
-    ph = temp[np.array(ph_ind)]
-    return th, ph, th.size
+    th_a = start[0]
+    th_b = end[0]
+    ph_a = start[1]
+    ph_b = end[1]
+    
+    ph_seg= general_segment(ph_a,ph_b,n)
+    th_seg = general_segment(th_a,th_b,n)
+
+    if half in th_seg:
+        # three segments - crossing theta = pi
+        th_seg1 = general_segment(th_a, half, n)
+        th_seg2 = general_segment(half, th_b, n)
+
+        th = th_seg1 + [half for i in ph_seg] + th_seg2
+        ph = [ph_a for i in th_seg1] + ph_seg + [ph_b for i in th_seg2]
+
+    else:
+        # two segment
+        if abs(th_a - half) < abs(th_b - half):
+            # th_a closer to pi
+            th = [th_a for i in ph_seg] + th_seg
+            ph = ph_seg + [ph_b for i in th_seg]
+        else:
+            # th_b closer to pi
+            th = th_seg + [th_b for i in ph_seg]
+            ph = [ph_a for i in th_seg] + ph_seg
+
+    # add end point
+    th = th + [th_b]
+    ph = ph + [ph_b]
+
+    th_values = temp[np.array(th)]
+    ph_values = temp[np.array(ph)]
+
+    return th_values, ph_values
 
 def curve_length(th,ph):
     N = th.size - 1
     delta = 1/N
     delta2 = 2/N
+    period = 2 * math.pi
+    
+    # reminder: fix periodic operations
+    th_diff_0 = periodic_op_sc(th[1], th[0], operator.sub, period)
+    ph_diff_0 = periodic_op_sc(ph[1], ph[0], operator.sub, period)
+    ph_diff_end = periodic_op_sc(ph[-1], ph[-2], operator.sub, period)
+    th_diff_end = periodic_op_sc(th[-1], th[-2], operator.sub, period)
 
-    sum = math.sqrt( ( a * (th[1] - th[0]) / delta )**2 + ( (c + a*math.cos(th[0])) * (ph[1] - ph[0]) / delta )**2)
-    sum += math.sqrt( ( a * (th[-1] - th[-2]) / delta )**2 + ( (c + a*math.cos(th[0])) * (ph[-1] - ph[-2]) / delta )**2)
+    sum = math.sqrt( ( a * th_diff_0 / delta )**2 + ( (c + a*math.cos(th[0])) * ph_diff_0 / delta )**2)
+    sum += math.sqrt( ( a * th_diff_end / delta )**2 + ( (c + a*math.cos(th[0])) * ph_diff_end / delta )**2)
     sum = sum/2
 
     for i in range(1,N):
-        sum += math.sqrt( ( a * (th[i+1] - th[i-1]) / delta2 )**2 + ( (c + a*math.cos(th[i])) * (ph[i+1] - ph[i-1]) / delta2 )**2)
+        th_diff_i = periodic_op_sc(th[i+1], th[i-1], operator.sub, period)
+        ph_diff_i = periodic_op_sc(ph[i+1], ph[i-1], operator.sub, period)
+
+        sum += math.sqrt( ( a * th_diff_i / delta2 )**2 + ( (c + a*math.cos(th[i])) * ph_diff_i / delta2 )**2)
 
     return sum * delta
 
@@ -157,15 +213,19 @@ def ex1():
 
     return n, c, a, start, end, expected_length
 
+
+
 if __name__ == "__main__":
     n = 100
     c, a = 2, 1
-    start = (25,25)
-    end = (0,0)
+
+    # (theta_index, ph_index)
+    start = (0,30)
+    end = (0,10)
 
     expected_length = 0
 
-    # n, c, a, start, end, expected_length = ex1()
+    n, c, a, start, end, expected_length = ex1()
 
 
     # plotting
@@ -177,44 +237,39 @@ if __name__ == "__main__":
     fig1, ax1 = draw_base(xx,yy,zz,xv,yv,zv)
 
     # get initial path
-    # th, ph, N = initial_path(n,start,end,temp)
+    th, ph = initial_path(n,start,end,temp)
+    # th, ph = Dijkstra(n,start,end,temp)
 
-    th, ph = Dijkstra(n,start,end,temp)
-
-    print(th)
-    print(ph)
-
+    initial_curve_length = curve_length(th,ph)
     x,y,z = tor2cart(th,ph,c,a)
     ax1.plot(x,y,z,c='g')
     
     # smooth path with fixed point iteration
     count = 0
     norm = math.inf
-    while norm > 0.0001:
+    while norm > 0.0001 and count < 2000:
         th_new, ph_new = functional_iteration(th,ph,a,c)
         diff_th = LA.norm(th_new - th, np.inf)
         diff_ph = LA.norm(ph_new - ph, np.inf)
-        norm = LA.norm([diff_th,diff_ph])
+        norm= LA.norm([diff_th,diff_ph])
         th = th_new
         ph = ph_new
         count += 1
-        print(count)
-    
-    print("norm:")
-    print(norm)
-
 
     fig2, ax2 = draw_base(xx,yy,zz,xv,yv,zv)
     x,y,z = tor2cart(th,ph,c,a)
     ax2.plot(x,y,z,c='g')
 
-    print(th)
-    print(ph)
-    
-    print("expected length:")
-    print(expected_length)
+    print("convergence norm:")
+    print(norm)
 
-    print("curve length:")
+    print("initial curve length:")
+    print(initial_curve_length)
+
+    print("iterated curve length:")
     print(curve_length(th,ph))
+
+    print("expected curve length:")
+    print(expected_length)
 
     plt.show()

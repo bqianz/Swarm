@@ -220,12 +220,12 @@ if __name__ == "__main__":
     c, a = 2, 1
 
     # (theta_index, ph_index)
-    start = (0,30)
-    end = (0,10)
+    start = (90,60)
+    end = (45,8)
 
     expected_length = 0
 
-    n, c, a, start, end, expected_length = ex1()
+    # n, c, a, start, end, expected_length = ex1()
 
 
     # plotting
@@ -237,6 +237,7 @@ if __name__ == "__main__":
     fig1, ax1 = draw_base(xx,yy,zz,xv,yv,zv)
 
     # get initial path
+    
     th, ph = initial_path(n,start,end,temp)
     # th, ph = Dijkstra(n,start,end,temp)
 
@@ -246,22 +247,30 @@ if __name__ == "__main__":
     
     # smooth path with fixed point iteration
     count = 0
+    curvelength = initial_curve_length
     norm = math.inf
-    while norm > 0.0001 and count < 2000:
+    while norm > 10 ** (-5) and count < 1000:
         th_new, ph_new = functional_iteration(th,ph,a,c)
-        diff_th = LA.norm(th_new - th, np.inf)
-        diff_ph = LA.norm(ph_new - ph, np.inf)
-        norm= LA.norm([diff_th,diff_ph])
+        # diff_th = LA.norm(th_new - th, np.inf)
+        # diff_ph = LA.norm(ph_new - ph, np.inf)
+        # norm= LA.norm([diff_th,diff_ph])
+        new_curve_length = curve_length(th_new,ph_new)
+        norm = abs(curvelength - new_curve_length)/curvelength
+        curvelength = new_curve_length
         th = th_new
         ph = ph_new
         count += 1
+        print("curve length difference")
+        print(norm)
+        print("count:")
+        print(count)
 
     fig2, ax2 = draw_base(xx,yy,zz,xv,yv,zv)
     x,y,z = tor2cart(th,ph,c,a)
     ax2.plot(x,y,z,c='g')
 
-    print("convergence norm:")
-    print(norm)
+    # print("convergence norm:")
+    # print(norm)
 
     print("initial curve length:")
     print(initial_curve_length)

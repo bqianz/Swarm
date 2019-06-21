@@ -1,7 +1,10 @@
 from __future__ import division # true divide of arrays
 import numpy as np
+import scipy.io
+from scipy import interpolate
 import math
 import matplotlib.pyplot as plt
+from matplotlib import cm, colors
 from mpl_toolkits.mplot3d import Axes3D
 from matplotlib.path import Path
 from numpy import linalg as LA
@@ -117,7 +120,7 @@ def functional_iteration(th,ph,a,c):
     return periodic_caliberate(new_th, period), periodic_caliberate(new_ph, period)
 
 
-def draw_base(x,y,z,xv,yv,zv):
+def draw_with_vertices(x,y,z,xv,yv,zv):
     # draw the mesh
     fig = plt.figure()
     ax = fig.gca(projection = '3d')
@@ -127,6 +130,26 @@ def draw_base(x,y,z,xv,yv,zv):
     
     # draw 
     ax.scatter(xv, yv, zv, c='r')
+    return fig, ax
+
+def draw_torus(x,y,z):
+    # draw the mesh
+    fig = plt.figure()
+    ax = fig.gca(projection = '3d')
+    ax.set_zlim(-3,3)
+    ax.plot_surface(x, y, z, rstride=5, cstride=5, edgecolors='none', alpha = 0.3)
+    ax.view_init(36, 26)
+    
+    return fig, ax
+
+def draw_colour(x,y,z,c_array):
+    # draw the mesh
+    fig = plt.figure()
+    ax = fig.gca(projection = '3d')
+    ax.set_zlim(-3,3)
+    ax.plot_surface(x, y, z, facecolors = c_array)
+    ax.view_init(36, 26)
+    
     return fig, ax
 
 def general_segment(a,b,n):
@@ -141,6 +164,8 @@ def general_segment(a,b,n):
         return list(temp % n)
 
 def initial_path(n,start,end,temp):
+    
+    
     half = int(n/2)
 
     th_a = start[0]
@@ -150,6 +175,7 @@ def initial_path(n,start,end,temp):
     
     ph_seg= general_segment(ph_a,ph_b,n)
     th_seg = general_segment(th_a,th_b,n)
+    # half theta is too arbitrary, compare both cases
 
     if half in th_seg:
         # three segments - crossing theta = pi
@@ -214,71 +240,116 @@ def ex1():
     return n, c, a, start, end, expected_length
 
 
-
-if __name__ == "__main__":
-    n = 100
-    c, a = 2, 1
-
+def distance(start, end, n, temp):
     # (theta_index, ph_index)
-    start = (90,60)
-    end = (45,8)
 
-    expected_length = 0
+    if start == end:
+        return 0
 
-    # n, c, a, start, end, expected_length = ex1()
-
-
-    # plotting
-    temp_mesh = np.linspace(0, 2*np.pi, n+1)
-    temp = temp_mesh[:-1]
-    phi, theta = np.meshgrid(temp_mesh,temp_mesh)
-    xx,yy,zz = tor2cart(theta,phi,c,a)
-    xv,yv,zv = tor2cart(temp[np.array([start[0],end[0]])],temp[np.array([start[1],end[1]])],c,a)
-    fig1, ax1 = draw_base(xx,yy,zz,xv,yv,zv)
-
-    # get initial path
-    
     th, ph = initial_path(n,start,end,temp)
-    # th, ph = Dijkstra(n,start,end,temp)
-
-    initial_curve_length = curve_length(th,ph)
-    x,y,z = tor2cart(th,ph,c,a)
-    ax1.plot(x,y,z,c='g')
-    
-    # smooth path with fixed point iteration
+    curvelength = curve_length(th,ph)
     count = 0
-    curvelength = initial_curve_length
     norm = math.inf
-    while norm > 10 ** (-5) and count < 1000:
+    while norm > 10 ** (-3) and count < 250:
         th_new, ph_new = functional_iteration(th,ph,a,c)
-        # diff_th = LA.norm(th_new - th, np.inf)
-        # diff_ph = LA.norm(ph_new - ph, np.inf)
-        # norm= LA.norm([diff_th,diff_ph])
         new_curve_length = curve_length(th_new,ph_new)
         norm = abs(curvelength - new_curve_length)/curvelength
         curvelength = new_curve_length
         th = th_new
         ph = ph_new
         count += 1
-        print("curve length difference")
-        print(norm)
-        print("count:")
-        print(count)
 
-    fig2, ax2 = draw_base(xx,yy,zz,xv,yv,zv)
-    x,y,z = tor2cart(th,ph,c,a)
-    ax2.plot(x,y,z,c='g')
+    return curvelength
 
-    # print("convergence norm:")
-    # print(norm)
+def store_grid(n,temp):
+    matfile = 'grid.mat'
+    h = 2 * math.pi / n
 
-    print("initial curve length:")
-    print(initial_curve_length)
+    d = np.zeros([n, n, n], temp.dtype)
+    d_th = np.zeros([n, n, n], temp.dtype)
+    d_ph = np.zeros([n, n, n], temp.dtype)
 
-    print("iterated curve length:")
-    print(curve_length(th,ph))
+    # generate d
+    for i in range(n):
+        start = (i,0)
+        for j in range(n):
+            for k in range(n):
+                print("i,j,k = " + str(i) + ", " + str(j) + ", " + str(k))
+                end = (j,k)
+                d[i,j,k] = distance(start,end,n,temp)
+    
+    # generate d_th, d_ph
+    for i in range(n):
+        for j in range(1,n-1):
+            d_th[i,j,:] = (d[i,j+1,:] - d[i,j-1,:]) / (2*h)
+        d_th[i,0,:] = (d[i,1,:] - d[i,n-1,:]) / (2*h)
+        d_th[i,n-1,:] = (d[i,0,:] - d[i,n-2,:]) / (2*h)
 
-    print("expected curve length:")
-    print(expected_length)
+        for k in range(1,n-1):
+            d_ph[i,:,k] = (d[i,:,k+1] - d[i,:,k-1]) / (2*h)
+        d_ph[i,:,0] = (d[i,:,1] - d[i,:,n-1]) / (2*h)
+        d_ph[i,:,n-1] = (d[i,:,0] - d[i,:,n-2]) / (2*h)
 
+    scipy.io.savemat(matfile, mdict={'distance': d, 'd_theta': d_th, 'd_phi': d_ph})
+    return matfile
+
+def array_expand(instance, n):
+    expanded = np.zeros([n+2,n+2])
+    expanded[1:-1,1:-1] = instance
+
+    expanded[-1,1:-1] = instance[0,:]
+    expanded[0,1:-1] = instance[-1,:]
+    expanded[1:-1, -1] = instance[:,0]
+    expanded[1:-1,0] = instance[:,-1]
+
+    expanded[0,0] = instance[-1,-1]
+    expanded[0,-1] = instance[-1,0]
+    expanded[-1,0] = instance[0,-1]
+    expanded[-1,-1] = instance[0,0]
+
+    return expanded
+
+if __name__ == "__main__":
+    n = 40
+    c, a = 2, 1
+
+    # plotting
+    temp_mesh = np.linspace(0, 2*np.pi, n+1)
+    temp = temp_mesh[:-1]
+
+    # store_grid(n,temp)
+    matdata = scipy.io.loadmat('grid.mat')
+    distance =  matdata['distance']
+    d_th = matdata['d_theta']
+    d_ph = matdata['d_phi']
+
+    norm = colors.Normalize()
+    c_array = np.zeros([n+1,n+1])
+    instance = distance[9]
+    c_array[0:-1,0:-1] = instance
+    c_array[-1,0:-1] = instance[1,:]
+    c_array[0:-1,-1] = instance[:,1]
+    c_array[-1,-1] = instance[0,0]
+    c_array = cm.gist_rainbow(norm(c_array))
+
+    phi, theta = np.meshgrid(temp_mesh,temp_mesh)
+    xx,yy,zz = tor2cart(theta,phi,c,a)
+    fig1, ax1 = draw_colour(xx,yy,zz,c_array)
+
+
+
+    temp_mesh = np.concatenate(([temp[-1]-2*np.pi],temp_mesh),axis=None)
+    expanded = array_expand(instance, n)
+    f = interpolate.interp2d(temp_mesh, temp_mesh, expanded, kind='cubic')
+    mesh_new = np.linspace(0,2*np.pi,2*n)
+
+    phi_new, theta_new = np.meshgrid(mesh_new,mesh_new)
+    xx_new,yy_new,zz_new = tor2cart(theta_new,phi_new,c,a)
+    color_new = c_array = cm.gist_rainbow(norm(f(mesh_new, mesh_new)))
+
+    fig2, ax2 = draw_colour(xx_new, yy_new, zz_new, color_new)
+
+
+    print(distance[9,28,5])
+    print(distance[9,30,5])
     plt.show()

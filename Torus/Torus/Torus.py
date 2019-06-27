@@ -153,6 +153,7 @@ def draw_colour(x,y,z,c_array):
     return fig, ax
 
 def general_segment(a,b,n):
+    # return shortest path between a and b with mod n
     if a==b:
         return []
     half = int(n/2)
@@ -164,7 +165,8 @@ def general_segment(a,b,n):
         return list(temp % n)
 
 def initial_path(n,start,end,temp):
-    
+    a = 1
+    c = 2
     
     half = int(n/2)
 
@@ -175,30 +177,38 @@ def initial_path(n,start,end,temp):
     
     ph_seg= general_segment(ph_a,ph_b,n)
     th_seg = general_segment(th_a,th_b,n)
-    # half theta is too arbitrary, compare both cases
 
-    if half in th_seg:
-        # three segments - crossing theta = pi
-        th_seg1 = general_segment(th_a, half, n)
-        th_seg2 = general_segment(half, th_b, n)
-
-        th = th_seg1 + [half for i in ph_seg] + th_seg2
-        ph = [ph_a for i in th_seg1] + ph_seg + [ph_b for i in th_seg2]
-
+    # two segment
+    if abs(th_a - half) < abs(th_b - half):
+        # th_a closer to pi
+        th2 = [th_a for i in ph_seg] + th_seg
+        ph2 = ph_seg + [ph_b for i in th_seg]
+        len2 = 2*math.pi/n* (a*len(th_seg) + (c - a*math.cos(abs(th_a - math.pi))*len(ph_seg)))
     else:
-        # two segment
-        if abs(th_a - half) < abs(th_b - half):
-            # th_a closer to pi
-            th = [th_a for i in ph_seg] + th_seg
-            ph = ph_seg + [ph_b for i in th_seg]
-        else:
-            # th_b closer to pi
-            th = th_seg + [th_b for i in ph_seg]
-            ph = [ph_a for i in th_seg] + ph_seg
+        # th_b closer to pi
+        th2 = th_seg + [th_b for i in ph_seg]
+        ph2 = [ph_a for i in th_seg] + ph_seg
+        len2 = 2*math.pi/n* (a*len(th_seg) + (c - a*math.cos(abs(th_b - math.pi))*len(ph_seg)))
 
     # add end point
-    th = th + [th_b]
-    ph = ph + [ph_b]
+    th2 = th2 + [th_b]
+    ph2 = ph2 + [ph_b]
+
+    # three segments: crossing theta = pi
+    th_seg1 = general_segment(th_a, half, n)
+    th_seg2 = general_segment(half, th_b, n)
+
+    len3 = 2*math.pi/n* (a*len(th_seg1 + th_seg2) + (c - a)*len(ph_seg))
+
+    th3 = th_seg1 + [half for i in ph_seg] + th_seg2 + [th_b]
+    ph3 = [ph_a for i in th_seg1] + ph_seg + [ph_b for i in th_seg2] + [ph_b]
+
+    if len2 < len3:
+        th = th2
+        ph = ph2
+    else:
+        th = th3
+        ph = ph3
 
     th_values = temp[np.array(th)]
     ph_values = temp[np.array(ph)]
@@ -310,7 +320,7 @@ def array_expand(instance, n):
     return expanded
 
 if __name__ == "__main__":
-    n = 40
+    n = 50
     c, a = 2, 1
 
     # plotting
@@ -325,7 +335,7 @@ if __name__ == "__main__":
 
     norm = colors.Normalize()
     c_array = np.zeros([n+1,n+1])
-    instance = distance[9]
+    instance = d_th[15]
     c_array[0:-1,0:-1] = instance
     c_array[-1,0:-1] = instance[1,:]
     c_array[0:-1,-1] = instance[:,1]
@@ -350,6 +360,6 @@ if __name__ == "__main__":
     fig2, ax2 = draw_colour(xx_new, yy_new, zz_new, color_new)
 
 
-    print(distance[9,28,5])
-    print(distance[9,30,5])
+    # print(distance[9,28,5])
+    # print(distance[9,30,5])
     plt.show()

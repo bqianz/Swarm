@@ -10,6 +10,7 @@ from matplotlib.path import Path
 from numpy import linalg as LA
 import operator
 from decimal import Decimal
+from time import process_time
 
 def find_neighbours(current,n):
 
@@ -164,6 +165,15 @@ def general_segment(a,b,n):
     else:
         return list(temp % n)
 
+def both_segments(a,b,n):
+    if a==b:
+        return [[],[]]
+    half = int(n/2)
+    s = np.sign(b-a)
+    temp = np.arange(a,b,s)
+
+    return [list(temp), list(np.arange(a,b-s*n,-s) % n)]
+
 def initial_path(n,start,end,temp):
     a = 1
     c = 2
@@ -175,22 +185,29 @@ def initial_path(n,start,end,temp):
     ph_a = start[1]
     ph_b = end[1]
     
-    ph_seg= general_segment(ph_a,ph_b,n)
-    th_seg = general_segment(th_a,th_b,n)
 
     # two segment
+    ph_seg= general_segment(ph_a,ph_b,n)
+    th_seg1, th_seg2 = both_segments(th_a,th_b,n)
+
     if abs(th_a - half) < abs(th_b - half):
         # th_a closer to pi
-        th2 = [th_a for i in ph_seg] + th_seg
-        ph2 = ph_seg + [ph_b for i in th_seg]
-        len2 = 2*math.pi/n* (a*len(th_seg) + (c - a*math.cos(abs(th_a - math.pi))*len(ph_seg)))
+        th1 = [th_a for i in ph_seg] + th_seg1
+        ph1 = ph_seg + [ph_b for i in th_seg1]
+
+        th2 = [th_a for i in ph_seg] + th_seg2
+        ph2 = ph_seg + [ph_b for i in th_seg2]
     else:
         # th_b closer to pi
-        th2 = th_seg + [th_b for i in ph_seg]
-        ph2 = [ph_a for i in th_seg] + ph_seg
-        len2 = 2*math.pi/n* (a*len(th_seg) + (c - a*math.cos(abs(th_b - math.pi))*len(ph_seg)))
+        th1 = th_seg1 + [th_b for i in ph_seg]
+        ph1 = [ph_a for i in th_seg1] + ph_seg
+
+        th2 = th_seg2 + [th_b for i in ph_seg]
+        ph2 = [ph_a for i in th_seg2] + ph_seg
 
     # add end point
+    th1 = th1 + [th_b]
+    ph1 = ph1 + [ph_b]
     th2 = th2 + [th_b]
     ph2 = ph2 + [ph_b]
 
@@ -198,22 +215,10 @@ def initial_path(n,start,end,temp):
     th_seg1 = general_segment(th_a, half, n)
     th_seg2 = general_segment(half, th_b, n)
 
-    len3 = 2*math.pi/n* (a*len(th_seg1 + th_seg2) + (c - a)*len(ph_seg))
-
     th3 = th_seg1 + [half for i in ph_seg] + th_seg2 + [th_b]
     ph3 = [ph_a for i in th_seg1] + ph_seg + [ph_b for i in th_seg2] + [ph_b]
 
-    if len2 < len3:
-        th = th2
-        ph = ph2
-    else:
-        th = th3
-        ph = ph3
-
-    th_values = temp[np.array(th)]
-    ph_values = temp[np.array(ph)]
-
-    return th_values, ph_values
+    return temp[np.array(th1)], temp[np.array(ph1)], temp[np.array(th2)], temp[np.array(ph2)], temp[np.array(th3)], temp[np.array(ph3)]
 
 def curve_length(th,ph):
     N = th.size - 1
@@ -249,14 +254,9 @@ def ex1():
 
     return n, c, a, start, end, expected_length
 
-
-def distance(start, end, n, temp):
-    # (theta_index, ph_index)
-
-    if start == end:
-        return 0
-
-    th, ph = initial_path(n,start,end,temp)
+def iterate(th,ph):
+    a = 1
+    c = 2
     curvelength = curve_length(th,ph)
     count = 0
     norm = math.inf
@@ -268,8 +268,17 @@ def distance(start, end, n, temp):
         th = th_new
         ph = ph_new
         count += 1
-
     return curvelength
+
+def distance(start, end, n, temp):
+    # (theta_index, ph_index)
+
+    if start == end:
+        return 0
+
+    th1, ph1, th2, ph2, th3, ph3 = initial_path(n,start,end,temp)
+
+    return min([iterate(th1,ph1), iterate(th2,ph2), iterate(th3,ph3)])
 
 def store_grid(n,temp):
     matfile = 'grid.mat'
@@ -279,14 +288,17 @@ def store_grid(n,temp):
     d_th = np.zeros([n, n, n], temp.dtype)
     d_ph = np.zeros([n, n, n], temp.dtype)
 
+
+    start = process_time()
     # generate d
     for i in range(n):
         start = (i,0)
         for j in range(n):
             for k in range(n):
-                print("i,j,k = " + str(i) + ", " + str(j) + ", " + str(k))
                 end = (j,k)
                 d[i,j,k] = distance(start,end,n,temp)
+            print("i,j = " + str(i) + ", " + str(j))
+            print(process_time())
     
     # generate d_th, d_ph
     for i in range(n):
@@ -320,7 +332,7 @@ def array_expand(instance, n):
     return expanded
 
 if __name__ == "__main__":
-    n = 50
+    n = 30
     c, a = 2, 1
 
     # plotting
@@ -335,7 +347,8 @@ if __name__ == "__main__":
 
     norm = colors.Normalize()
     c_array = np.zeros([n+1,n+1])
-    instance = d_th[15]
+    # instance = distance[int(n/5)]
+    instance = distance[20]
     c_array[0:-1,0:-1] = instance
     c_array[-1,0:-1] = instance[1,:]
     c_array[0:-1,-1] = instance[:,1]

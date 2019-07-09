@@ -138,7 +138,7 @@ def draw_torus(x,y,z):
     fig = plt.figure()
     ax = fig.gca(projection = '3d')
     ax.set_zlim(-3,3)
-    ax.plot_surface(x, y, z, rstride=5, cstride=5, edgecolors='none', alpha = 0.3)
+    ax.plot_surface(x, y, z, rstride=1, cstride=1, edgecolors='none', alpha = 0.3)
     ax.view_init(36, 26)
     
     return fig, ax
@@ -331,9 +331,22 @@ def array_expand(instance, n):
 
     return expanded
 
+def recaliberate(array):
+    period = 2 * math.pi
+    for i in range(len(array)):
+        temp = array[i]
+        while temp < 0:
+            temp = temp + period
+        while temp >= period:
+            temp = temp - period
+        array[i] = temp
+    return array
+
 if __name__ == "__main__":
     n = 30
     c, a = 2, 1
+
+    num = 20
 
     # plotting
     temp_mesh = np.linspace(0, 2*np.pi, n+1)
@@ -345,38 +358,104 @@ if __name__ == "__main__":
     d_th = matdata['d_theta']
     d_ph = matdata['d_phi']
 
-    norm = colors.Normalize()
-    c_array = np.zeros([n+1,n+1])
-    # instance = distance[int(n/5)]
-    instance = distance[8]
-    c_array[0:-1,0:-1] = instance
-    c_array[-1,0:-1] = instance[1,:]
-    c_array[0:-1,-1] = instance[:,1]
-    c_array[-1,-1] = instance[0,0]
-    c_array = cm.gist_rainbow(norm(c_array))
 
     phi, theta = np.meshgrid(temp_mesh,temp_mesh)
     xx,yy,zz = tor2cart(theta,phi,c,a)
-    fig1, ax1 = draw_colour(xx,yy,zz,c_array)
+    fig1, ax1 = draw_torus(xx,yy,zz)
+
+    th = np.random.rand(num) * np.pi/2
+    ph = np.random.rand(num) * np.pi/2
+
+    # draw particles on mesh
+    x,y,z = tor2cart(th,ph,c,a)
+    ax1.scatter(x,y,z)
+
+    expanded_mesh = np.concatenate(([temp[-1]-2*np.pi],temp_mesh),axis=None)
+
+    f_distance = [None] * n
+    f_dth = [None] * n
+    f_dph = [None] * n
+
+    for i in range(n):
+        d_expanded = array_expand(distance[i], n)
+        d_th_expanded = array_expand(d_th[i],n)
+        d_ph_expanded = array_expand(d_ph[i],n)
+        f_distance[i] = interpolate.interp2d(expanded_mesh, expanded_mesh, d_expanded, kind='cubic')
+        f_dth[i] = interpolate.interp2d(expanded_mesh, expanded_mesh, d_th_expanded, kind='cubic')
+        f_dph[i] = interpolate.interp2d(expanded_mesh, expanded_mesh, d_ph_expanded, kind='cubic')
 
 
+    
 
-    temp_mesh = np.concatenate(([temp[-1]-2*np.pi],temp_mesh),axis=None)
-    expanded = array_expand(instance, n)
-    f = interpolate.interp2d(temp_mesh, temp_mesh, expanded, kind='cubic')
-    mesh_new = np.linspace(0,2*np.pi,2*n)
+    dt = 0.1
+    final_time = 7.5
 
-    phi_new, theta_new = np.meshgrid(mesh_new,mesh_new)
-    xx_new,yy_new,zz_new = tor2cart(theta_new,phi_new,c,a)
-    color_new = c_array = cm.gist_rainbow(norm(f(mesh_new, mesh_new)))
+    
+    distance_interp = [None] * (n+2)
+    dth_interp = [None] * (n+2)
+    dph_interp = [None] * (n+2)
 
-    fig2, ax2 = draw_colour(xx_new, yy_new, zz_new, color_new)
+    v_th = [None] * num
+    v_ph = [None] * num
+
+    for k in range(int(final_time / dt)):
+        for i in range(num):
+            sum_th = 0
+            sum_ph = 0
+            for j in [j for j in range(num) if j != i]:
+                # distance between x_i, x_j
+                th_i = th[i]
+                th_j = th[j]
+                ph_i = 0
+                ph_j = ph[j] - ph[i]
+
+                for l in range(n):
+                    # distance_interp[l+1]= f_distance[l](th_j,ph_j)[0]
+                    #dth_interp[l+1] = f_dth[l](th_j, ph_j)[0]
+                    #dph_interp[l+1] = f_dph[l](th_j,ph_j)[0]
+
+                    distance_interp[l+1]= f_distance[l](ph_j,th_j)[0]
+                    dth_interp[l+1] = f_dth[l](ph_j, th_j)[0]
+                    dph_interp[l+1] = f_dph[l](ph_j,th_j)[0]
 
 
-    temp = np.argmax(instance)
-    print("theta index:")
-    print(math.floor(temp/n))
-    print("phi index:")
-    print(temp % n)
-    # print(distance[9,30,5])
+                distance_interp[0] = distance_interp[-2]
+                distance_interp[-1] = distance_interp[1]
+                dth_interp[0] = distance_interp[-2]
+                dth_interp[-1] = distance_interp[1]
+                dph_interp[0] = distance_interp[-2]
+                dph_interp[-1] = dph_interp[1]
+
+
+                temp_expanded = np.concatenate(([-temp_mesh[1]],temp_mesh), axis = None)
+                f_d = interpolate.interp1d(temp_expanded,distance_interp)
+                f_dt = interpolate.interp1d(temp_expanded, dth_interp)
+                f_dp = interpolate.interp1d(temp_expanded, dph_interp)
+
+                d = f_d(th_i)
+                k_prime = - d
+
+                sum_th += 1/(a**2) * k_prime * f_dt(th_i)
+                sum_ph += 1/((c+a*math.cos(th_i))**2) * k_prime * f_dp(th_i)
+
+            v_th[i] = - sum_th / num
+            v_ph[i] = - sum_ph / num
+
+        th = th + np.array(v_th)*dt
+        ph = ph + np.array(v_ph)*dt
+
+        th = recaliberate(th)
+        ph = recaliberate(ph)
+
+
+        print(str(LA.norm(v_th)))
+        print(str(LA.norm(v_ph)))
+
+    x,y,z = tor2cart(th,ph,c,a)
+    fig2, ax2 = draw_torus(xx,yy,zz)
+    ax2.scatter(x,y,z)
+
+    print(th)
+    print(ph)
+
     plt.show()

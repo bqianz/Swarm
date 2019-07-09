@@ -348,7 +348,7 @@ if __name__ == "__main__":
     norm = colors.Normalize()
     c_array = np.zeros([n+1,n+1])
     # instance = distance[int(n/5)]
-    instance = distance[20]
+    instance = distance[8]
     c_array[0:-1,0:-1] = instance
     c_array[-1,0:-1] = instance[1,:]
     c_array[0:-1,-1] = instance[:,1]
@@ -373,6 +373,10 @@ if __name__ == "__main__":
     fig2, ax2 = draw_colour(xx_new, yy_new, zz_new, color_new)
 
 
-    # print(distance[9,28,5])
+    temp = np.argmax(instance)
+    print("theta index:")
+    print(math.floor(temp/n))
+    print("phi index:")
+    print(temp % n)
     # print(distance[9,30,5])
     plt.show()

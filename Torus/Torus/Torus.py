@@ -363,8 +363,8 @@ if __name__ == "__main__":
     xx,yy,zz = tor2cart(theta,phi,c,a)
     fig1, ax1 = draw_torus(xx,yy,zz)
 
-    th = np.random.rand(num) * np.pi/2
-    ph = np.random.rand(num) * np.pi/2
+    th = np.random.rand(20) * np.pi/2
+    ph = np.random.rand(20) * np.pi/2
 
     # draw particles on mesh
     x,y,z = tor2cart(th,ph,c,a)
@@ -388,7 +388,7 @@ if __name__ == "__main__":
     
 
     dt = 0.1
-    final_time = 7.5
+    final_time = 50
 
     
     distance_interp = [None] * (n+2)
@@ -433,7 +433,7 @@ if __name__ == "__main__":
                 f_dp = interpolate.interp1d(temp_expanded, dph_interp)
 
                 d = f_d(th_i)
-                k_prime = - d
+                k_prime = d ** (-4)
 
                 sum_th += 1/(a**2) * k_prime * f_dt(th_i)
                 sum_ph += 1/((c+a*math.cos(th_i))**2) * k_prime * f_dp(th_i)

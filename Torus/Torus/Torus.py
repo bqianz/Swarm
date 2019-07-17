@@ -363,13 +363,22 @@ if __name__ == "__main__":
     xx,yy,zz = tor2cart(theta,phi,c,a)
     fig1, ax1 = draw_torus(xx,yy,zz)
 
-    th = np.random.rand(20) * np.pi/2
-    ph = np.random.rand(20) * np.pi/2
+    # ph1 = np.random.rand(10) * np.pi/2
+    # ph2 = np.random.rand(10)* np.pi/2 + np.pi
 
+
+    # ph = np.concatenate((ph1,ph2),axis = None)
+    # th1 = np.random.rand(10) * np.pi/2
+    # th2 = np.random.rand(10)*np.pi/2 + np.pi
+    # th = np.concatenate((th1,th2),axis=None)
+    
+    th = [np.pi]*num
+    # ph = np.random.rand(20) * 2 * np.pi
+    ph = np.random.rand(20) * 2 * np.pi
     # draw particles on mesh
     x,y,z = tor2cart(th,ph,c,a)
-    ax1.scatter(x,y,z)
-
+    particles = ax1.scatter(x,y,z,color='black')
+    plt.savefig('initial.png')
     expanded_mesh = np.concatenate(([temp[-1]-2*np.pi],temp_mesh),axis=None)
 
     f_distance = [None] * n
@@ -433,7 +442,7 @@ if __name__ == "__main__":
                 f_dp = interpolate.interp1d(temp_expanded, dph_interp)
 
                 d = f_d(th_i)
-                k_prime = d ** (-4)
+                k_prime = d ** (-2)
 
                 sum_th += 1/(a**2) * k_prime * f_dt(th_i)
                 sum_ph += 1/((c+a*math.cos(th_i))**2) * k_prime * f_dp(th_i)
@@ -450,12 +459,18 @@ if __name__ == "__main__":
 
         print(str(LA.norm(v_th)))
         print(str(LA.norm(v_ph)))
+        print(k)
 
-    x,y,z = tor2cart(th,ph,c,a)
-    fig2, ax2 = draw_torus(xx,yy,zz)
-    ax2.scatter(x,y,z)
+
+        x,y,z = tor2cart(th,ph,c,a)
+
+        particles.remove()
+        particles = ax1.scatter(x,y,z,color='black')
+
+        plt.pause(0.0001)
 
     print(th)
     print(ph)
-
+    plt.savefig('final.png')
     plt.show()
+    

@@ -300,17 +300,19 @@ def store_grid(n,temp):
             print("i,j = " + str(i) + ", " + str(j))
             print(process_time())
     
-    # generate d_th, d_ph
-    for i in range(n):
-        for j in range(1,n-1):
-            d_th[i,j,:] = (d[i,j+1,:] - d[i,j-1,:]) / (2*h)
-        d_th[i,0,:] = (d[i,1,:] - d[i,n-1,:]) / (2*h)
-        d_th[i,n-1,:] = (d[i,0,:] - d[i,n-2,:]) / (2*h)
+    # generate d_th
+    for j in range(n):
+        for i in range(1,n-1):
+            d_th[i,j,:] = (d[i+1,j,:] - d[i-1,j,:]) / (2*h)
+        d_th[0,j,:] = (d[1,j,:] - d[n-1,j,:]) / (2*h)
+        d_th[n-1,j,:] = (d[0,j,:] - d[n-2,j,:]) / (2*h)
 
+    # generate d_ph
+    for i in range(n):
         for k in range(1,n-1):
-            d_ph[i,:,k] = (d[i,:,k+1] - d[i,:,k-1]) / (2*h)
-        d_ph[i,:,0] = (d[i,:,1] - d[i,:,n-1]) / (2*h)
-        d_ph[i,:,n-1] = (d[i,:,0] - d[i,:,n-2]) / (2*h)
+            d_ph[i,:,k] = (d[i,:,k-1] - d[i,:,k+1]) / (2*h)
+        d_ph[i,:,0] = (d[i,:,n-1] - d[i,:,1]) / (2*h)
+        d_ph[i,:,n-1] = (d[i,:,n-2] - d[i,:,0]) / (2*h)
 
     scipy.io.savemat(matfile, mdict={'distance': d, 'd_theta': d_th, 'd_phi': d_ph})
     return matfile
@@ -346,8 +348,6 @@ if __name__ == "__main__":
     n = 50
     c, a = 2, 1
 
-    num = 2
-
     # plotting
     temp_mesh = np.linspace(0, 2*np.pi, n+1)
     temp = temp_mesh[:-1]
@@ -358,127 +358,62 @@ if __name__ == "__main__":
     d_th = matdata['d_theta']
     d_ph = matdata['d_phi']
 
+    norm = colors.Normalize()
+    c_array = np.zeros([n+1,n+1])
+    # instance = distance[int(n/5)]
+
+    instance = d_th[0]
+
+    c_array[0:-1,0:-1] = instance
+    c_array[-1,0:-1] = instance[1,:]
+    c_array[0:-1,-1] = instance[:,1]
+    c_array[-1,-1] = instance[0,0]
+    c_array = cm.gist_rainbow(norm(c_array))
 
     phi, theta = np.meshgrid(temp_mesh,temp_mesh)
     xx,yy,zz = tor2cart(theta,phi,c,a)
-    fig1, ax1 = draw_torus(xx,yy,zz)
+    fig1, ax1 = draw_colour(xx,yy,zz,c_array)
 
-    # ph1 = np.random.rand(10) * np.pi/2
-    # ph2 = np.random.rand(10)* np.pi/2 + np.pi
-
-
-    # ph = np.concatenate((ph1,ph2),axis = None)
-    # th1 = np.random.rand(10) * np.pi/2
-    # th2 = np.random.rand(10)*np.pi/2 + np.pi
-    # th = np.concatenate((th1,th2),axis=None)
-    
-    # th = [np.pi]*num
-    # th = np.random.rand(num)
-    # ph = np.random.rand(num)
-
-    th = [0]*num
-    ph = [0, np.pi]
+    th = [0]
+    ph = [0]
     # draw particles on mesh
     x,y,z = tor2cart(th,ph,c,a)
-    particles = ax1.scatter(x,y,z,color='black')
-    plt.savefig('initial.png')
-    expanded_mesh = np.concatenate(([temp[-1]-2*np.pi],temp_mesh),axis=None)
-
-    f_distance = [None] * n
-    f_dth = [None] * n
-    f_dph = [None] * n
-
-    for i in range(n):
-        d_expanded = array_expand(distance[i], n)
-        d_th_expanded = array_expand(d_th[i],n)
-        d_ph_expanded = array_expand(d_ph[i],n)
-        f_distance[i] = interpolate.interp2d(expanded_mesh, expanded_mesh, d_expanded, kind='cubic')
-        f_dth[i] = interpolate.interp2d(expanded_mesh, expanded_mesh, d_th_expanded, kind='cubic')
-        f_dph[i] = interpolate.interp2d(expanded_mesh, expanded_mesh, d_ph_expanded, kind='cubic')
+    ax1.scatter(x,y,z,color='black')
 
 
-    
+    temp_mesh = np.concatenate(([temp[-1]-2*np.pi],temp_mesh),axis=None)
+    expanded = array_expand(instance, n)
+    f = interpolate.interp2d(temp_mesh, temp_mesh, expanded, kind='cubic')
+    mesh_new = np.linspace(0,2*np.pi,2*n)
 
-    dt = 0.1
-    final_time = 50
+    phi_new, theta_new = np.meshgrid(mesh_new,mesh_new)
+    xx_new,yy_new,zz_new = tor2cart(theta_new,phi_new,c,a)
+    color_new = c_array = cm.gist_rainbow(norm(f(mesh_new, mesh_new)))
 
-    
-    distance_interp = [None] * (n+2)
-    dth_interp = [None] * (n+2)
-    dph_interp = [None] * (n+2)
+    fig2, ax2 = draw_colour(xx_new, yy_new, zz_new, color_new)
 
-    v_th = [None] * num
-    v_ph = [None] * num
-
-    for k in range(int(final_time / dt)):
-        for i in range(num):
-            sum_th = 0
-            sum_ph = 0
-            for j in [j for j in range(num) if j != i]:
-                # distance between x_i, x_j
-                th_i = th[i]
-                th_j = th[j]
-                ph_i = 0
-                ph_j = ph[j] - ph[i]
-
-                for l in range(n):
-                    # distance_interp[l+1]= f_distance[l](th_j,ph_j)[0]
-                    #dth_interp[l+1] = f_dth[l](th_j, ph_j)[0]
-                    #dph_interp[l+1] = f_dph[l](th_j,ph_j)[0]
-
-                    distance_interp[l+1]= f_distance[l](ph_j,th_j)[0]
-                    dth_interp[l+1] = f_dth[l](ph_j, th_j)[0]
-                    dph_interp[l+1] = f_dph[l](ph_j,th_j)[0]
+    th = [0]
+    ph = [0]
+    # draw particles on mesh
+    x,y,z = tor2cart(th,ph,c,a)
+    ax2.scatter(x,y,z,color='black')
 
 
-                distance_interp[0] = distance_interp[-2]
-                distance_interp[-1] = distance_interp[1]
-                dth_interp[0] = distance_interp[-2]
-                dth_interp[-1] = distance_interp[1]
-                dph_interp[0] = distance_interp[-2]
-                dph_interp[-1] = dph_interp[1]
+    magnitude = np.absolute(instance)
+    temp = np.argmin(magnitude)
+    print("theta index:")
+    print(math.floor(temp/n))
+    print("phi index:")
+    print(temp % n)
+    print("value:")
+    print(str(magnitude.min()))
 
+    print(instance[0,:])
 
-                temp_expanded = np.concatenate(([-temp_mesh[1]],temp_mesh), axis = None)
-                f_d = interpolate.interp1d(temp_expanded,distance_interp)
-                f_dt = interpolate.interp1d(temp_expanded, dth_interp)
-                f_dp = interpolate.interp1d(temp_expanded, dph_interp)
+    print(distance[1,0,21])
+    print(distance[0,0,21])
+    print(distance[n-1,0,21])
 
-                d = f_d(th_i)
-                k_prime = d ** (-2)
-
-                sum_th += 1/(a**2) * k_prime * f_dt(th_i)
-                sum_ph += 1/((c+a*math.cos(th_i))**2) * k_prime * f_dp(th_i)
-
-            v_th[i] = - sum_th / num
-            v_ph[i] = - sum_ph / num
-
-        th = th + np.array(v_th)*dt
-        ph = ph + np.array(v_ph)*dt
-
-        th = recaliberate(th)
-        ph = recaliberate(ph)
-
-
-        norm_th = LA.norm(v_th)
-        norm_ph = LA.norm(v_ph)
-        print(str(norm_th))
-        print(str(norm_ph))
-        print(k)
-
-
-        x,y,z = tor2cart(th,ph,c,a)
-
-        particles.remove()
-        particles = ax1.scatter(x,y,z,color='black')
-
-        plt.pause(0.0001)
-
-        norm_tol = 10 ** -3
-        if (norm_th < norm_tol and norm_ph < norm_tol):
-            break
-
-    print(th)
-    print(ph)
-    plt.savefig('final.png')
     plt.show()
+
+

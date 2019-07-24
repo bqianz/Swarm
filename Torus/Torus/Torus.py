@@ -343,10 +343,10 @@ def recaliberate(array):
     return array
 
 if __name__ == "__main__":
-    n = 30
+    n = 50
     c, a = 2, 1
 
-    num = 20
+    num = 2
 
     # plotting
     temp_mesh = np.linspace(0, 2*np.pi, n+1)
@@ -372,9 +372,12 @@ if __name__ == "__main__":
     # th2 = np.random.rand(10)*np.pi/2 + np.pi
     # th = np.concatenate((th1,th2),axis=None)
     
-    th = [np.pi]*num
-    # ph = np.random.rand(20) * 2 * np.pi
-    ph = np.random.rand(20) * 2 * np.pi
+    # th = [np.pi]*num
+    # th = np.random.rand(num)
+    # ph = np.random.rand(num)
+
+    th = [0]*num
+    ph = [0, np.pi]
     # draw particles on mesh
     x,y,z = tor2cart(th,ph,c,a)
     particles = ax1.scatter(x,y,z,color='black')
@@ -457,8 +460,10 @@ if __name__ == "__main__":
         ph = recaliberate(ph)
 
 
-        print(str(LA.norm(v_th)))
-        print(str(LA.norm(v_ph)))
+        norm_th = LA.norm(v_th)
+        norm_ph = LA.norm(v_ph)
+        print(str(norm_th))
+        print(str(norm_ph))
         print(k)
 
 
@@ -469,8 +474,11 @@ if __name__ == "__main__":
 
         plt.pause(0.0001)
 
+        norm_tol = 10 ** -3
+        if (norm_th < norm_tol and norm_ph < norm_tol):
+            break
+
     print(th)
     print(ph)
     plt.savefig('final.png')
     plt.show()
-    

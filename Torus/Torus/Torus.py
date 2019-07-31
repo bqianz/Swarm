@@ -111,7 +111,6 @@ def functional_iteration(th,ph,a,c):
 
     new_ph = np.copy(ph)
     frac1 = np.divide(a * np.sin(th), c + a * np.cos(th))
-
     new_ph[1:-1] = ph_sum/2 + np.multiply( frac1[1:-1], np.multiply( ph_diff, th_diff )) / 4
 
     new_th = np.copy(th)
@@ -344,6 +343,7 @@ def recaliberate(array):
         array[i] = temp
     return array
 
+
 if __name__ == "__main__":
     n = 50
     c, a = 2, 1
@@ -410,9 +410,15 @@ if __name__ == "__main__":
 
     print(instance[0,:])
 
+    # d_th discontinuity
     print(distance[1,0,21])
     print(distance[0,0,21])
     print(distance[n-1,0,21])
+
+    # d_ph discontinuity
+    # print(distance[0,0,n-1])
+    #print(distance[0,0,0])
+    # print(distance[0,0,1])
 
     plt.show()
 

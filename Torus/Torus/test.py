@@ -1,7 +1,12 @@
-from __future__ import division # true divide of arrays
+# from __future__ import division # true divide of arrays
+
 import numpy as np
 import math
 from numpy import linalg as LA
+
+x = 4
+y = 1
+
 
 # case of not crossing half theta
 def general_segment(a,b,n):
@@ -14,4 +19,9 @@ def general_segment(a,b,n):
         return temp % n
 
 if __name__ == "__main__":
-    print(generate_array(4,1,10))
+    print(general_segment(x,y,10))
+    print(x+y)
+    arr1 = np.ones(7)
+    arr2 = np.ones(7) * 2
+    print(arr1/arr2)
+    print(arr1 * arr2)

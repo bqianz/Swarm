@@ -1,4 +1,4 @@
-from __future__ import division # true divide of arrays
+# from __future__ import division # true divide of arrays
 import numpy as np
 import scipy.io
 from scipy import interpolate
@@ -11,6 +11,13 @@ from numpy import linalg as LA
 import operator
 from decimal import Decimal
 from time import process_time
+
+a = 1
+c = 2
+n = 50
+
+temp_mesh = np.linspace(0, 2*np.pi, n+1)
+temp = temp_mesh[:-1]
 
 def find_neighbours(current,n):
 
@@ -101,25 +108,6 @@ def periodic_caliberate(arr, period):
         result[i] = float(Decimal(arr[i]) % Decimal(period))
     return result
 
-def functional_iteration(th,ph,a,c):
-    period = 2 * math.pi
-
-    ph_diff = periodic_operation(ph[2:], ph[0:-2], operator.sub, period)
-    th_diff = periodic_operation(th[2:], th[0:-2], operator.sub, period)
-    ph_sum = periodic_operation(ph[2:], ph[0:-2], operator.add, period)
-    th_sum = periodic_operation(th[2:], th[0:-2], operator.add, period)
-
-    new_ph = np.copy(ph)
-    frac1 = np.divide(a * np.sin(th), c + a * np.cos(th))
-    new_ph[1:-1] = ph_sum/2 + np.multiply( frac1[1:-1], np.multiply( ph_diff, th_diff )) / 4
-
-    new_th = np.copy(th)
-    frac2 = np.multiply(np.sin(th)/a, c + a*np.cos(th))
-    new_th[1:-1] = th_sum/2 + np.multiply( frac2[1:-1] , np.multiply(ph_diff,ph_diff) ) / 8
-
-    return periodic_caliberate(new_th, period), periodic_caliberate(new_ph, period)
-
-
 def draw_with_vertices(x,y,z,xv,yv,zv):
     # draw the mesh
     fig = plt.figure()
@@ -173,10 +161,7 @@ def both_segments(a,b,n):
 
     return [list(temp), list(np.arange(a,b-s*n,-s) % n)]
 
-def initial_path(n,start,end,temp):
-    a = 1
-    c = 2
-    
+def initial_path(start,end):
     half = int(n/2)
 
     th_a = start[0]
@@ -219,27 +204,28 @@ def initial_path(n,start,end,temp):
 
     return temp[np.array(th1)], temp[np.array(ph1)], temp[np.array(th2)], temp[np.array(ph2)], temp[np.array(th3)], temp[np.array(ph3)]
 
-def curve_length(th,ph):
+def curve_length(u,v):
+    # calculate length from a parametrization r(s) where s is from 0 to 1
     N = th.size - 1
     delta = 1/N
     delta2 = 2/N
     period = 2 * math.pi
     
     # reminder: fix periodic operations
-    th_diff_0 = periodic_op_sc(th[1], th[0], operator.sub, period)
-    ph_diff_0 = periodic_op_sc(ph[1], ph[0], operator.sub, period)
-    ph_diff_end = periodic_op_sc(ph[-1], ph[-2], operator.sub, period)
-    th_diff_end = periodic_op_sc(th[-1], th[-2], operator.sub, period)
+    v_diff_0 = periodic_op_sc(th[1], th[0], operator.sub, period)
+    u_diff_0 = periodic_op_sc(ph[1], ph[0], operator.sub, period)
+    u_diff_end = periodic_op_sc(ph[-1], ph[-2], operator.sub, period)
+    v_diff_end = periodic_op_sc(th[-1], th[-2], operator.sub, period)
 
-    sum = math.sqrt( ( a * th_diff_0 / delta )**2 + ( (c + a*math.cos(th[0])) * ph_diff_0 / delta )**2)
-    sum += math.sqrt( ( a * th_diff_end / delta )**2 + ( (c + a*math.cos(th[0])) * ph_diff_end / delta )**2)
+    sum = math.sqrt( ( a * v_diff_0 / delta )**2 + ( (c + a*math.cos(v[0])) * u_diff_0 / delta )**2)
+    sum += math.sqrt( ( a * v_diff_end / delta )**2 + ( (c + a*math.cos(v[0])) * u_diff_end / delta )**2)
     sum = sum/2
 
     for i in range(1,N):
-        th_diff_i = periodic_op_sc(th[i+1], th[i-1], operator.sub, period)
-        ph_diff_i = periodic_op_sc(ph[i+1], ph[i-1], operator.sub, period)
+        v_diff_i = periodic_op_sc(v[i+1], v[i-1], operator.sub, period)
+        u_diff_i = periodic_op_sc(u[i+1], u[i-1], operator.sub, period)
 
-        sum += math.sqrt( ( a * th_diff_i / delta2 )**2 + ( (c + a*math.cos(th[i])) * ph_diff_i / delta2 )**2)
+        sum += math.sqrt( ( a * v_diff_i / delta2 )**2 + ( (c + a*math.cos(v[i])) * u_diff_i / delta2 )**2)
 
     return sum * delta
 
@@ -253,15 +239,31 @@ def ex1():
 
     return n, c, a, start, end, expected_length
 
+def functional_iteration(th,ph):
+    period = 2 * math.pi
+
+    ph_diff = periodic_operation(ph[2:], ph[0:-2], operator.sub, period)
+    th_diff = periodic_operation(th[2:], th[0:-2], operator.sub, period)
+    ph_sum = periodic_operation(ph[2:], ph[0:-2], operator.add, period)
+    th_sum = periodic_operation(th[2:], th[0:-2], operator.add, period)
+
+    new_ph = np.copy(ph)
+    frac1 = np.divide(a * np.sin(th), c + a * np.cos(th))
+    new_ph[1:-1] = ph_sum/2 + np.multiply( frac1[1:-1], np.multiply( ph_diff, th_diff )) / 4
+
+    new_th = np.copy(th)
+    frac2 = np.multiply(np.sin(th)/a, c + a*np.cos(th))
+    new_th[1:-1] = th_sum/2 + np.multiply( frac2[1:-1] , np.multiply(ph_diff,ph_diff) ) / 8
+
+    return periodic_caliberate(new_th, period), periodic_caliberate(new_ph, period)
+
 def iterate(th,ph):
-    a = 1
-    c = 2
-    curvelength = curve_length(th,ph)
+    curvelength = curve_length(ph,th)
     count = 0
     norm = math.inf
     while norm > 10 ** (-3) and count < 250:
         th_new, ph_new = functional_iteration(th,ph,a,c)
-        new_curve_length = curve_length(th_new,ph_new)
+        new_curve_length = curve_length(ph_new,th_new)
         norm = abs(curvelength - new_curve_length)/curvelength
         curvelength = new_curve_length
         th = th_new
@@ -278,6 +280,12 @@ def distance(start, end, n, temp):
     th1, ph1, th2, ph2, th3, ph3 = initial_path(n,start,end,temp)
 
     return min([iterate(th1,ph1), iterate(th2,ph2), iterate(th3,ph3)])
+
+def distance(start,end):
+    if start == end:
+        return 0
+
+    th1, ph1, th2, ph2, th3, ph3 = initial_path(n,start,end,temp)
 
 def store_grid(n,temp):
     matfile = 'grid.mat'
@@ -299,19 +307,19 @@ def store_grid(n,temp):
             print("i,j = " + str(i) + ", " + str(j))
             print(process_time())
     
-    # generate d_th
-    for j in range(n):
-        for i in range(1,n-1):
-            d_th[i,j,:] = (d[i+1,j,:] - d[i-1,j,:]) / (2*h)
-        d_th[0,j,:] = (d[1,j,:] - d[n-1,j,:]) / (2*h)
-        d_th[n-1,j,:] = (d[0,j,:] - d[n-2,j,:]) / (2*h)
+    # # generate d_th
+    # for j in range(n):
+    #     for i in range(1,n-1):
+    #         d_th[i,j,:] = (d[i+1,j,:] - d[i-1,j,:]) / (2*h)
+    #     d_th[0,j,:] = (d[1,j,:] - d[n-1,j,:]) / (2*h)
+    #     d_th[n-1,j,:] = (d[0,j,:] - d[n-2,j,:]) / (2*h)
 
-    # generate d_ph
-    for i in range(n):
-        for k in range(1,n-1):
-            d_ph[i,:,k] = (d[i,:,k-1] - d[i,:,k+1]) / (2*h)
-        d_ph[i,:,0] = (d[i,:,n-1] - d[i,:,1]) / (2*h)
-        d_ph[i,:,n-1] = (d[i,:,n-2] - d[i,:,0]) / (2*h)
+    # # generate d_ph
+    # for i in range(n):
+    #     for k in range(1,n-1):
+    #         d_ph[i,:,k] = (d[i,:,k-1] - d[i,:,k+1]) / (2*h)
+    #     d_ph[i,:,0] = (d[i,:,n-1] - d[i,:,1]) / (2*h)
+    #     d_ph[i,:,n-1] = (d[i,:,n-2] - d[i,:,0]) / (2*h)
 
     scipy.io.savemat(matfile, mdict={'distance': d, 'd_theta': d_th, 'd_phi': d_ph})
     return matfile
@@ -345,81 +353,9 @@ def recaliberate(array):
 
 
 if __name__ == "__main__":
-    n = 50
-    c, a = 2, 1
 
     # plotting
     temp_mesh = np.linspace(0, 2*np.pi, n+1)
     temp = temp_mesh[:-1]
 
-    # store_grid(n,temp)
-    matdata = scipy.io.loadmat('grid.mat')
-    distance =  matdata['distance']
-    d_th = matdata['d_theta']
-    d_ph = matdata['d_phi']
-
-    norm = colors.Normalize()
-    c_array = np.zeros([n+1,n+1])
-    # instance = distance[int(n/5)]
-
-    instance = d_th[0]
-
-    c_array[0:-1,0:-1] = instance
-    c_array[-1,0:-1] = instance[1,:]
-    c_array[0:-1,-1] = instance[:,1]
-    c_array[-1,-1] = instance[0,0]
-    c_array = cm.gist_rainbow(norm(c_array))
-
-    phi, theta = np.meshgrid(temp_mesh,temp_mesh)
-    xx,yy,zz = tor2cart(theta,phi,c,a)
-    fig1, ax1 = draw_colour(xx,yy,zz,c_array)
-
-    th = [0]
-    ph = [0]
-    # draw particles on mesh
-    x,y,z = tor2cart(th,ph,c,a)
-    ax1.scatter(x,y,z,color='black')
-
-
-    temp_mesh = np.concatenate(([temp[-1]-2*np.pi],temp_mesh),axis=None)
-    expanded = array_expand(instance, n)
-    f = interpolate.interp2d(temp_mesh, temp_mesh, expanded, kind='cubic')
-    mesh_new = np.linspace(0,2*np.pi,2*n)
-
-    phi_new, theta_new = np.meshgrid(mesh_new,mesh_new)
-    xx_new,yy_new,zz_new = tor2cart(theta_new,phi_new,c,a)
-    color_new = c_array = cm.gist_rainbow(norm(f(mesh_new, mesh_new)))
-
-    fig2, ax2 = draw_colour(xx_new, yy_new, zz_new, color_new)
-
-    th = [0]
-    ph = [0]
-    # draw particles on mesh
-    x,y,z = tor2cart(th,ph,c,a)
-    ax2.scatter(x,y,z,color='black')
-
-
-    magnitude = np.absolute(instance)
-    temp = np.argmin(magnitude)
-    print("theta index:")
-    print(math.floor(temp/n))
-    print("phi index:")
-    print(temp % n)
-    print("value:")
-    print(str(magnitude.min()))
-
-    print(instance[0,:])
-
-    # d_th discontinuity
-    print(distance[1,0,21])
-    print(distance[0,0,21])
-    print(distance[n-1,0,21])
-
-    # d_ph discontinuity
-    # print(distance[0,0,n-1])
-    #print(distance[0,0,0])
-    # print(distance[0,0,1])
-
-    plt.show()
-
-
+    store_grid(n,temp)

@@ -88,26 +88,6 @@ def tor2cart(theta, phi, c, a):
     z = a * np.sin(theta)
     return x, y, z
 
-def periodic_op_sc(a,b,op_func,period):
-    if abs(b-a) > period / 2:
-        if a < b:
-            a = a + period
-        else:
-            b = b + period
-    return op_func(a,b)
-
-def periodic_operation(arr1, arr2, op_func, period):
-    result = np.copy(arr1)
-    for i in range(arr1.size):
-        result[i] = periodic_op_sc(arr1[i],arr2[i],op_func,period)
-    return result
-
-def periodic_caliberate(arr, period):
-    result = np.copy(arr)
-    for i in range(arr.size):
-        result[i] = float(Decimal(arr[i]) % Decimal(period))
-    return result
-
 def draw_with_vertices(x,y,z,xv,yv,zv):
     # draw the mesh
     fig = plt.figure()
@@ -140,17 +120,6 @@ def draw_colour(x,y,z,c_array):
     
     return fig, ax
 
-def general_segment(a,b,n):
-    # return shortest path between a and b with mod n
-    if a==b:
-        return []
-    half = int(n/2)
-    s = np.sign(b-a)
-    temp = np.arange(a,b,s)
-    if temp.size > half:
-        return list(np.arange(a,b-s*n,-s) % n)
-    else:
-        return list(temp % n)
 
 def both_segments(a,b,n):
     if a==b:
@@ -161,73 +130,8 @@ def both_segments(a,b,n):
 
     return [list(temp), list(np.arange(a,b-s*n,-s) % n)]
 
-def initial_path(start,end):
-    half = int(n/2)
 
-    th_a = start[0]
-    th_b = end[0]
-    ph_a = start[1]
-    ph_b = end[1]
-    
 
-    # two segment
-    ph_seg= general_segment(ph_a,ph_b,n)
-    th_seg1, th_seg2 = both_segments(th_a,th_b,n)
-
-    if abs(th_a - half) < abs(th_b - half):
-        # th_a closer to pi
-        th1 = [th_a for i in ph_seg] + th_seg1
-        ph1 = ph_seg + [ph_b for i in th_seg1]
-
-        th2 = [th_a for i in ph_seg] + th_seg2
-        ph2 = ph_seg + [ph_b for i in th_seg2]
-    else:
-        # th_b closer to pi
-        th1 = th_seg1 + [th_b for i in ph_seg]
-        ph1 = [ph_a for i in th_seg1] + ph_seg
-
-        th2 = th_seg2 + [th_b for i in ph_seg]
-        ph2 = [ph_a for i in th_seg2] + ph_seg
-
-    # add end point
-    th1 = th1 + [th_b]
-    ph1 = ph1 + [ph_b]
-    th2 = th2 + [th_b]
-    ph2 = ph2 + [ph_b]
-
-    # three segments: crossing theta = pi
-    th_seg1 = general_segment(th_a, half, n)
-    th_seg2 = general_segment(half, th_b, n)
-
-    th3 = th_seg1 + [half for i in ph_seg] + th_seg2 + [th_b]
-    ph3 = [ph_a for i in th_seg1] + ph_seg + [ph_b for i in th_seg2] + [ph_b]
-
-    return temp[np.array(th1)], temp[np.array(ph1)], temp[np.array(th2)], temp[np.array(ph2)], temp[np.array(th3)], temp[np.array(ph3)]
-
-def curve_length(u,v):
-    # calculate length from a parametrization r(s) where s is from 0 to 1
-    N = th.size - 1
-    delta = 1/N
-    delta2 = 2/N
-    period = 2 * math.pi
-    
-    # reminder: fix periodic operations
-    v_diff_0 = periodic_op_sc(th[1], th[0], operator.sub, period)
-    u_diff_0 = periodic_op_sc(ph[1], ph[0], operator.sub, period)
-    u_diff_end = periodic_op_sc(ph[-1], ph[-2], operator.sub, period)
-    v_diff_end = periodic_op_sc(th[-1], th[-2], operator.sub, period)
-
-    sum = math.sqrt( ( a * v_diff_0 / delta )**2 + ( (c + a*math.cos(v[0])) * u_diff_0 / delta )**2)
-    sum += math.sqrt( ( a * v_diff_end / delta )**2 + ( (c + a*math.cos(v[0])) * u_diff_end / delta )**2)
-    sum = sum/2
-
-    for i in range(1,N):
-        v_diff_i = periodic_op_sc(v[i+1], v[i-1], operator.sub, period)
-        u_diff_i = periodic_op_sc(u[i+1], u[i-1], operator.sub, period)
-
-        sum += math.sqrt( ( a * v_diff_i / delta2 )**2 + ( (c + a*math.cos(v[i])) * u_diff_i / delta2 )**2)
-
-    return sum * delta
 
 def ex1():
     var = 30
@@ -238,24 +142,6 @@ def ex1():
     expected_length = 2 * math.pi * a * var/100
 
     return n, c, a, start, end, expected_length
-
-def functional_iteration(th,ph):
-    period = 2 * math.pi
-
-    ph_diff = periodic_operation(ph[2:], ph[0:-2], operator.sub, period)
-    th_diff = periodic_operation(th[2:], th[0:-2], operator.sub, period)
-    ph_sum = periodic_operation(ph[2:], ph[0:-2], operator.add, period)
-    th_sum = periodic_operation(th[2:], th[0:-2], operator.add, period)
-
-    new_ph = np.copy(ph)
-    frac1 = np.divide(a * np.sin(th), c + a * np.cos(th))
-    new_ph[1:-1] = ph_sum/2 + np.multiply( frac1[1:-1], np.multiply( ph_diff, th_diff )) / 4
-
-    new_th = np.copy(th)
-    frac2 = np.multiply(np.sin(th)/a, c + a*np.cos(th))
-    new_th[1:-1] = th_sum/2 + np.multiply( frac2[1:-1] , np.multiply(ph_diff,ph_diff) ) / 8
-
-    return periodic_caliberate(new_th, period), periodic_caliberate(new_ph, period)
 
 def iterate(th,ph):
     curvelength = curve_length(ph,th)

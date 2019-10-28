@@ -2,6 +2,7 @@ import operator
 from decimal import Decimal
 import numpy as np
 
+
 class FuncPath:
     """
     A path between two points on the Torus, to which the functional iteration is applied.
@@ -31,8 +32,13 @@ class FuncPath:
         Calculate arc length of path
     """
 
-    # def __init__(self):
+    period = 2 * np.pi
 
+    def __init__(self,u,v,c,a):
+        self.u = u
+        self.v = v
+        self.c = c
+        self.a = a
 
     def periodic_op(self,arr1, arr2, op_type):
         """Element-wise operation on arrays with consideration of the period.
@@ -120,11 +126,11 @@ class FuncPath:
         v_sum = self.periodic_op(self.v[2:], self.v[0:-2], operator.add)
 
         new_u = np.copy(self.u)
-        frac1 = np.divide(a * np.sin(self.v), c + a * np.cos(self.v))
-        new_u[1:-1] = ph_sum/2 + np.multiply( frac1[1:-1], np.multiply( u_diff, v_diff )) / 4
+        frac1 = np.divide(self.a * np.sin(self.v), self.c + self.a * np.cos(self.v))
+        new_u[1:-1] = u_sum/2 + np.multiply( frac1[1:-1], np.multiply( u_diff, v_diff )) / 4
 
         new_v = np.copy(self.v)
-        frac2 = np.multiply(np.sin(self.v)/a, c + a*np.cos(self.v))
+        frac2 = np.multiply(np.sin(self.v)/self.a, self.c + self.a*np.cos(self.v))
         new_v[1:-1] = v_sum/2 + np.multiply( frac2[1:-1] , np.multiply(u_diff,u_diff) ) / 8
 
         self.u = self.periodic_caliberate(new_u)
@@ -149,14 +155,28 @@ class FuncPath:
         u_diff_end = periodic_op_scalar(ph[-1], ph[-2], operator.sub, period)
         v_diff_end = periodic_op_scalar(th[-1], th[-2], operator.sub, period)
 
-        temp1 = np.sqrt( ( a * v_diff_0 / delta )**2 + ( (c + a*np.cos(v[0])) * u_diff_0 / delta )**2)
-        temp2 = np.sqrt( ( a * v_diff_end / delta )**2 + ( (c + a*np.cos(v[0])) * u_diff_end / delta )**2)
+        temp1 = np.sqrt( ( self.a * v_diff_0 / delta )**2 + ( (self.c + self.a*np.cos(v[0])) * u_diff_0 / delta )**2)
+        temp2 = np.sqrt( ( self.a * v_diff_end / delta )**2 + ( (self.c + self.a*np.cos(v[0])) * u_diff_end / delta )**2)
         sum = (temp1 + temp2)/2
 
         for i in range(1,N):
             v_diff_i = periodic_op_sc(v[i+1], v[i-1], operator.sub, period)
             u_diff_i = periodic_op_sc(u[i+1], u[i-1], operator.sub, period)
 
-            sum += np.sqrt( ( a * v_diff_i / delta2 )**2 + ( (c + a*np.cos(v[i])) * u_diff_i / delta2 )**2)
+            sum += np.sqrt( ( self.a * v_diff_i / delta2 )**2 + ( (self.c + self.a*np.cos(v[i])) * u_diff_i / delta2 )**2)
 
         return sum * delta
+
+
+    def tor2cart(self):
+        x = (self.c + self.a*np.cos(self.v)) * np.cos(self.u)
+        y = (self.c + self.a*np.cos(self.v)) * np.sin(self.u)
+        z = self.a * np.sin(self.v)
+        return x, y, z
+
+    def draw_path(self, ax, prev_path=None): # draw path on existing figure
+        if prev_path is not None:
+            prev_path.remove()
+
+        x,y,z = self.tor2cart()
+        return ax.plot(x, y, z)

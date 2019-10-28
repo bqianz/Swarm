@@ -88,37 +88,6 @@ def tor2cart(theta, phi, c, a):
     z = a * np.sin(theta)
     return x, y, z
 
-def draw_with_vertices(x,y,z,xv,yv,zv):
-    # draw the mesh
-    fig = plt.figure()
-    ax = fig.gca(projection = '3d')
-    ax.set_zlim(-3,3)
-    ax.plot_surface(x, y, z, rstride=5, cstride=5, edgecolors='none', alpha = 0.3)
-    ax.view_init(36, 26)
-    
-    # draw 
-    ax.scatter(xv, yv, zv, c='r')
-    return fig, ax
-
-def draw_torus(x,y,z):
-    # draw the mesh
-    fig = plt.figure()
-    ax = fig.gca(projection = '3d')
-    ax.set_zlim(-3,3)
-    ax.plot_surface(x, y, z, rstride=1, cstride=1, edgecolors='none', alpha = 0.3)
-    ax.view_init(36, 26)
-    
-    return fig, ax
-
-def draw_colour(x,y,z,c_array):
-    # draw the mesh
-    fig = plt.figure()
-    ax = fig.gca(projection = '3d')
-    ax.set_zlim(-3,3)
-    ax.plot_surface(x, y, z, facecolors = c_array)
-    ax.view_init(36, 26)
-    
-    return fig, ax
 
 
 def both_segments(a,b,n):

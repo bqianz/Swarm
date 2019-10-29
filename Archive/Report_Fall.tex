@@ -1,0 +1,132 @@
+\documentclass{article}
+\usepackage[utf8]{inputenc}
+\usepackage{amssymb,amsmath,amsthm,mathtools}
+\usepackage{subcaption}
+\usepackage{graphicx}
+% \usepackage[margin=0.9in]{geometry}
+
+\newcommand{\p}{\partial}
+\newcommand{\al}{\vec{\alpha}}
+\newcommand{\h}{\theta}
+\newcommand{\g}{\gamma}
+\newcommand{\hi}{\theta_i}
+\newcommand{\hj}{\theta_j}
+\newcommand{\ei}{\vec{\mathbf{e}}_1}
+\newcommand{\ej}{\vec{\mathbf{e}}_2}
+\newcommand{\ek}{\vec{\mathbf{e}}_3}
+\newcommand{\er}{\vec{\mathbf{e}}_R}
+\newcommand{\eh}{\vec{\mathbf{e}}_\theta}
+\newcommand{\ep}{\vec{\mathbf{e}}_\phi}
+\newcommand{\ehi}{\vec{\mathbf{e}}_{\theta_i}}
+\newcommand{\epi}{\vec{\mathbf{e}}_{\phi_i}}
+\newcommand{\X}{\vec{\mathbf{X}}}
+\newcommand{\R}{\mathbb{R}}
+\def\*#1{\mathbf{#1}}
+% \newcommand{\df}{\vcentcolon=}
+\newcommand{\kp}{\kappa}
+\newcommand{\norm}[1]{\left\lVert#1\right\rVert}
+\newcommand{\eq}[1]{\begin{align}#1\end{align}}
+\setlength{\jot}{10pt} % row spacing in align
+
+\title{Hyperbolic Sphere} % Poster title
+\date{October 2017}
+\author{} % Author(s)
+
+
+\begin{document}
+\maketitle
+\section{The Question}
+
+The integro-differential equation on the hyperbolic sphere:
+\eq{
+\rho_t + \nabla_H \cdot (\rho v) =  0, \\
+v = -\nabla_H K * \rho, \label{velocity}
+}
+
+\section{Set-up on the unit Hyperbolic Sphere}
+\subsection{Hyperbolic Coordinates}
+We use the parametrization $\mathbf{H}^2$ from \cite{kimura}, as visualized on the upper sheet hyperboloid.Let $\X = x\ei + y\ej + z\ek$, where $\ei,\ej,\ek$ are the standard cartesian basis and
+\begin{align*}
+x &= \cos{\phi} \sinh{\h}, \\
+y &= \sin{\phi} \sinh{\h}, \\
+z &= \cosh{\h}.
+\end{align*}
+Hyperbolic distance $\tilde{\h}$ as defined by the hyperbolic inner product is:
+\[
+\cosh{\tilde{\h}} =  \cosh{\h_i}\cosh{\h_j} - \sinh{\h_i}\sinh{\h_j}\cos{(\phi_i - \phi_j)},
+\]
+Note that hyperbolic distance is not proportional to the arclength visually.
+
+Define the hyperbolic basis in $\R^3$ as the following:
+\begin{align*}
+\er &= \frac{\X}{\norm{\X}_H} \\
+\eh &= \frac{\frac{\p \X}{\p \h}}{\norm{\frac{\p \X}{\p \h}}_H } = \cos{\phi}\cosh{\h} \ei + \sin{\phi}\cosh{\h} \ej + \sinh{\h}\ek \\
+\ep &= \frac{\frac{\p \X}{\p \phi}}{\norm{\frac{\p \X}{\p \phi}}_H } = -\sin{\phi}\ei + \cos{\phi}\ej
+\end{align*}
+
+
+
+\subsection{Operators on $\mathbf{H}^2$}
+\begin{align*}
+\nabla_H f &= \frac{\p f}{\p \h} \eh + \frac{1}{\sin{\h}} \frac{\p f}{\p \phi} \ep \\
+\nabla_H \cdot F &=\frac{1}{\sinh{\h}} \left(\cosh{\h} F_\h + \sinh{\h}\frac{\p}{\p\h} F_\h  \right) + \frac{1}{\sinh{\h}} \frac{\p}{\p \phi}F_\phi \\
+\Delta_H f &= \nabla_H \cdot \nabla_H f \\
+&= \coth{\h} \frac{\p f}{\p \h} + \frac{\p^2 f}{\p \h^2} + \frac{1}{\sinh^2{\h}} \frac{\p^2 f}{\p \phi^2} 
+\end{align*}
+For an interaction potential that takes two particle positions as arguments, i.e $K(\hi,\phi_i,\hj,\phi_j)$, we define its gradient with respect to the i-th particle as
+\[
+\nabla_i K = \frac{\p f}{\p \hi} \ehi + \frac{1}{\sin{\hi}} \frac{\p f}{\p \phi_i} \epi.
+\]
+
+Convolution centered at $\X_i$ is defined
+\[
+K * \rho ((\hi,\phi_i) = \int_{0}^{2\pi} \int_{0}^{\infty} K(\hi, \phi_i, \hj, \phi_j) \rho(\hj,\phi_j) \sinh{\hj} d\hj d\phi_j.
+\]
+
+\section{Choice of Potential on $\mathbf{H}^2$}
+
+The function satisfying $\Delta_H G = -\delta$ according to \cite{kimura} is
+\[
+G( \tilde{\h} ) = - \frac{1}{2\pi} \log{ \tanh{\frac{\tilde{\h}}{2}}}.
+\]
+We want to add to $G$ an attraction term $A$. One could naively solve the equation $\Delta_H A(\tilde{\h}) = C$ for $\h \neq 0$ and $C$ some positive constant to find a family of satisfying functions
+\[
+A_\gamma(\tilde{\h}) = \frac{\gamma}{2\pi} \log{ \sinh{ \tilde{\h}}}.
+\]
+We can verify that in fact,
+\[
+\Delta_H A_\gamma = \gamma \left( \delta + \frac{1}{2\pi} \right)
+\]
+Then for any $\gamma \neq 1$, the potential
+\[
+\setlength{\fboxsep}{3\fboxsep}\boxed{
+K(\tilde{\h}) = -\frac{1}{2\pi} \log{ \tanh{ \frac{\tilde{\h}}{2}}} + \frac{\gamma}{2\pi} \log{ \sinh{ \tilde{\h}}}
+}
+\]
+satsifies 
+\[
+\Delta_H K = (1-\gamma)\left( -\delta + \frac{\gamma}{2\pi(1-\gamma)} \right).
+\]
+By the density ODE following a particle path:
+\begin{align}
+\frac{D}{Dt} \rho
+&=-\rho (-\Delta_H K * \rho),\label{approach}\\
+&=-\rho (1-\gamma) \left( \rho - \frac{\gamma M}{2\pi (1-\gamma)}\right).
+\end{align}
+For $\rho = \frac{\gamma M}{2\pi (1-\gamma)}$ to be a stable equilibrium of the ODE, we must choose $\gamma \in (0,1)$.
+
+
+\begin{thebibliography}{3}
+\bibitem{swarm} 
+R. C. Fetecau, Y. Huang and T. Kolokolnikov, Swarm dynamics and equilibria for a nonlocal aggregation model , Nonlinearity, Vol. 24, No. 10, 2681-2716 (2011)
+ 
+\bibitem{kimura}
+Yoshifumi Kimura, Vortex motion on surfaces with constant curvature, Proc. R. Soc. Lond. A (1999) 455, 245-259
+
+\bibitem{howard}
+Cohl, Howard. (2011). Fundamental Solution of Laplace's Equation in Hyperspherical Geometry. Symmetry, Integrability and Geometry: Methods and Applications. 7. . 10.3842/SIGMA.2011.108.
+
+\end{thebibliography}
+
+
+\end{document}

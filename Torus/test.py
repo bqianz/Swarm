@@ -1,10 +1,26 @@
-import numpy as np
-import initialpath as ip
+import plotly.graph_objects as go
 
-x = 4
-y = 1
-n = 5
+from torusmesh import TorusMesh
+from funcpath import FuncPath
 
-if __name__ == "__main__":
-    print(ip.general_segment(x,y,n))
-    print(x+y)
+n = 30
+c, a = 2, 1
+
+torus = TorusMesh(n,c,a)
+
+start = (0,0)
+end = (5,5)
+
+p1, p2, p3 = torus.initial_path(start,end)
+
+# generates base figure
+fig = torus.plotly_figure_realtime()
+
+p1.plotly_path(fig)
+
+def check_figure_type(fig):
+    return'''
+        fig is of type "{}"
+    '''.format(type(fig))
+
+print(check_figure_type(fig))

@@ -184,3 +184,10 @@ class FuncPath:
     def plotly_path(self,fig):
         x, y, z = self.tor2cart()
         fig.add_trace(go.Scatter3d(x=x, y=y, z=z, mode='lines', name='lines'))
+
+    def plotly_path_dict(self, fig):
+        x, y, z = self.tor2cart()
+        new = {'mode': 'lines', 'name': 'lines', 'x': x, 'y': y, 'z': z, 'type': 'scatter3d'}
+        fig['data'] = [fig['data'][0], new]
+
+

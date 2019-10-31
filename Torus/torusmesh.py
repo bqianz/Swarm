@@ -121,11 +121,28 @@ class TorusMesh:
 		matfile = 'torus_data.mat'
 		scipy.io.savemat(matfile, mdict={'xyz': (x,y,z)})
 
-	def plotly_figure(self, filename):
+	def plotly_draw_from_data(self, filename):
 		matdata = scipy.io.loadmat(filename)
 		x,y,z =  matdata['xyz']
 		return go.Figure(data=[go.Surface(x=x, y=y, z=z, opacity=0.50)])
 
-	def plotly_figure_realtime(self):
+	def plotly_draw_go(self):
 		x, y, z = self.tor2cart()
-		return go.Figure(data=[go.Surface(x=x, y=y, z=z, opacity=0.50)])
+		return go.Figure(
+			data=[go.Surface(x=x, y=y, z=z, opacity=0.50)],
+			layout=go.Layout(
+				uirevision=1
+			)
+		)
+
+	def plotly_draw(self):
+		x, y, z = self.tor2cart()
+		return {
+		"data": [{"type": "surface",
+              "x": x,
+              "y": y,
+              "z": z,
+              "opacity": 0.5}],
+        "layout": {"uirevision": 1} # so that axis don't change between callbacks
+        # uirevision is kind of buggy
+		}

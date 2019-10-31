@@ -16,23 +16,25 @@ torus = TorusMesh(n,c,a)
 start = (0,0)
 end = (5,5)
 
-p1, p2, p3 = torus.initial_path(start,end)
+paths = torus.initial_path(start,end)
+num_paths = len(paths)
 
 # generates base figure
-fig = torus.plotly_figure_realtime()
+fig = torus.plotly_draw_go()
+
+# draw initial path
+
+for i in range(num_paths):
+    paths[i].plotly_draw_path_go(fig)
 
 app = dash.Dash(__name__)
 
 app.layout = html.Div(children=[
-    html.H1(children='Torus'),
+    html.H1(children='Functional Iteration on Paths on the Torus'),
 
-    html.Div(children='''
-        Particle dynamics on the Torus
-    '''),
-
-    # html.Div(id = 'check_type', children='''
-    #     fig is of type "{}"
-    # '''.format(type(fig))),
+    # html.Div(children='''
+    #     Particle dynamics on the Torus
+    # '''),
 
     html.Button(id='iterate_button', n_clicks=0, children='Iterate'),
 
@@ -51,33 +53,20 @@ app.layout = html.Div(children=[
     )
 def update_figure(n_clicks, fig):
     # note: graph_objects become dict when passed as an argument into callback function
-    p1.plotly_path_dict(fig)
-    p1.functional_iteration()
+
+    # in this order because callback is fired at n_clicks = 0
+    for i in range(num_paths):
+        paths[i].plotly_update_path(i,fig)
+        paths[i].functional_iteration()
     return fig
-
-
-# TODO: make it so angle stays in user-input in layout
-# TODO: show multiple lines
-
-# @app.callback(
-#     Output('check_type', 'children'),
-#     [Input('iterate_button', 'n_clicks')],
-#     [State('torus', 'figure')]
-#     )
-# def check_figure_type(n_clicks, fig):
-#     return'''
-#         fig is of type "{}"
-#     '''.format(type(fig))
-
-# @app.callback(
-#     Output('check_type', 'children'),
-#     [Input('iterate_button', 'n_clicks')],
-#     [State('torus', 'figure')]
-#     )
-# def check_figure_type(n_clicks, fig):
-#     print(fig['data'][1])
-#     return 0
 
 
 if __name__ == '__main__':
     app.run_server(debug=True)
+
+# TODO: plot end points
+# TODO: host page
+# TODO: hide colorbar
+# TODO: user-input end points
+# TODO: continuously iterate (interval?)
+# TODO: make lines more visible

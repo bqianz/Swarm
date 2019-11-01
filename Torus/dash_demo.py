@@ -14,7 +14,7 @@ c, a = 2, 1
 torus = TorusMesh(n,c,a)
 
 start = (0,0)
-end = (5,5)
+end = (0,5)
 
 paths = torus.initial_path(start,end)
 num_paths = len(paths)

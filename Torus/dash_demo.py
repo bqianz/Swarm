@@ -9,29 +9,59 @@ import scipy.io
 from torusmesh import TorusMesh
 from funcpath import FuncPath
 
+# read data
 matdata = scipy.io.loadmat('dash_demo_data.mat')
 x_t, y_t, z_t =  matdata['torus_data']
 data = matdata['path_data']
+end_points = matdata['end_points']
 
 # generates base figure
 fig = go.Figure(
-    data=[go.Surface(x=x, y=y, z=z, opacity=0.50)],
+    data=[go.Surface(x=x_t,
+    y=y_t,
+    z=z_t,
+    opacity=0.50,
+    name = 'base',
+    showscale = False
+    )],
     layout=go.Layout(
-        uirevision=1
+        uirevision=1,
+        height = 500
 		)
     )
 
-# TODO: draw endpoints
-fig.add_trace(go.Scatter3d(x=x, y=y, z=z, mode='lines', name='lines'))
-
-
-
-# draw path
-fig.add_trace(go.Scatter3d(x=x, y=y, z=z, mode='lines', name='lines'))
+# draw end points
+fig.add_trace(go.Scatter3d(
+    x=end_points[0],
+    y=end_points[1],
+    z=end_points[2],
+    mode='markers',
+    name='Vertices',
+    marker = dict(symbol = 'x',  size = 4)
+    ))
 
 # draw initial path
+fig.add_trace(go.Scatter3d(
+    x=data[0,0],
+    y=data[1,0],
+    z=data[2,0],
+    mode='lines',
+    name='Path',
+    ))
 
-app = dash.Dash(__name__)
+
+# external CSS stylesheets
+external_stylesheets = [
+    'https://codepen.io/chriddyp/pen/bWLwgP.css',
+    {
+        'href': 'https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css',
+        'rel': 'stylesheet',
+        'integrity': 'sha384-MCw98/SFnGE8fJT3GXwEOngsV7Zt27NXFoaoApmYm81iuXoPkFOJwJ8ERdknLPMO',
+        'crossorigin': 'anonymous'
+    }
+]
+app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
+
 
 server = app.server
 
@@ -42,30 +72,44 @@ app.layout = html.Div(children=[
     #     Particle dynamics on the Torus
     # '''),
 
-    html.Button(id='iterate_button', n_clicks=0, children='Iterate'),
+    # html.Button(id='iterate_button', n_clicks=0, children='Iterate'),
 
     dcc.Graph(
         id='torus',
 		figure = fig
-	)
+	),
 
-])
+
+    html.H3(id='show-iteration'),
+
+    dcc.Slider(
+        id='iteration-slider',
+        min=0,
+        max=60,
+        step=1,
+        value=0,
+        marks={i * 5: '{}'.format(i * 5) for i in range(13)},
+    )
+],
+style={"max-width": "800px", "margin": "auto"},)
 
 
 @app.callback(
-    Output('torus', 'figure'),
-    [Input('iterate_button', 'n_clicks')],
-    [State('torus', 'figure')]
-    )
-def update_figure(n_clicks, fig):
+    [Output('torus', 'figure'),
+    Output('show-iteration','children')],
+    [Input('iteration-slider', 'value')],
+    [State('torus', 'figure')])
+def update_figure(value, fig):
     # note: graph_objects become dict when passed as an argument into callback function
-
-    # in this order because callback is fired at n_clicks = 0
-    for i in range(num_paths):
-        paths[i].plotly_update_path(i,fig)
-        paths[i].functional_iteration()
-    return fig
-
+    new = {
+        'mode': 'lines',
+        'name': 'lines',
+        'x': data[0,value],
+        'y': data[1,value],
+        'z': data[2,value],
+        'type': 'scatter3d'}
+    fig['data'][2] = new
+    return fig, '{}-th iteration'.format(value)
 
 if __name__ == '__main__':
     app.run_server(debug=True)

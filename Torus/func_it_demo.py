@@ -1,5 +1,3 @@
-import functions as fc
-import numpy as np
 import matplotlib.pyplot as plt
 from torusmesh import TorusMesh
 
@@ -20,15 +18,42 @@ if __name__ == "__main__":
 	# draw torus
 	fig, ax = torus.draw_torus()
 
-	p1, p2, p3 = torus.initial_path(start,end)
+	paths = torus.initial_path(start,end)
 
-	prev_plot, = p1.draw_path(ax)
+	# num_paths = len(paths)
+	# prev_paths = []
 
-	for i in range(200):
-		p1.functional_iteration()
-		prev_plot, = p1.draw_path(ax, prev_plot)
+	# for i in range(num_paths):
+	# 	temp, = paths[i].draw_path(ax)
+	# 	prev_paths.append(temp)
+
+	# for j in range(200):
+	# 	for i in range(num_paths):
+	# 		paths[i].functional_iteration()
+	# 		prev_paths[i], = paths[i].draw_path(ax, prev_paths[i])
+			
+	# 		print("curve " + str(i) + " has length " + str(paths[i].curve_length()))
+	# 	plt.pause(0.0001)
+
+
+	p = paths[0]
+
+	prev_path, = p.draw_path(ax)
+
+	curvelength = p.curve_length()
+	count = 0
+	norm = 10000
+
+	while norm > 10 ** (-5) and count < 1000:
+	# while count < 1000:
+		p.functional_iteration()
+		prev_path, = p.draw_path(ax, prev_path)
+
+		new_curve_length = p.curve_length()
+		norm = abs(curvelength - new_curve_length)/curvelength
+
+		curvelength = new_curve_length
+
+		count += 1
 		plt.pause(0.0001)
-
-
-
-	# TODO: learn animation. is remove() optimal? draw multiple lines at once.
+		print("count = " + str(count) + ", length = " + str(curvelength))

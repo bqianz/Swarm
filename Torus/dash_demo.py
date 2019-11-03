@@ -4,28 +4,32 @@ import dash_html_components as html
 from dash.dependencies import Input, Output, State
 
 import plotly.graph_objects as go
+import scipy.io
 
 from torusmesh import TorusMesh
 from funcpath import FuncPath
 
-n = 50
-c, a = 2, 1
-
-torus = TorusMesh(n,c,a)
-
-start = (0,0)
-end = (0,5)
-
-paths = torus.initial_path(start,end)
-num_paths = len(paths)
+matdata = scipy.io.loadmat('dash_demo_data.mat')
+x_t, y_t, z_t =  matdata['torus_data']
+data = matdata['path_data']
 
 # generates base figure
-fig = torus.plotly_draw_go()
+fig = go.Figure(
+    data=[go.Surface(x=x, y=y, z=z, opacity=0.50)],
+    layout=go.Layout(
+        uirevision=1
+		)
+    )
+
+# TODO: draw endpoints
+fig.add_trace(go.Scatter3d(x=x, y=y, z=z, mode='lines', name='lines'))
+
+
+
+# draw path
+fig.add_trace(go.Scatter3d(x=x, y=y, z=z, mode='lines', name='lines'))
 
 # draw initial path
-
-for i in range(num_paths):
-    paths[i].plotly_draw_path_go(fig)
 
 app = dash.Dash(__name__)
 

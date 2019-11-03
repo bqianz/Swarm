@@ -39,6 +39,9 @@ class FuncPath:
         self.v = v
         self.c = c
         self.a = a
+        self.length = len(u)
+        self.N = self.length - 1 # number of intervals in the path
+        self.current_iteration = 0
 
     def periodic_op(self,arr1, arr2, op_type):
         """Element-wise operation on arrays with consideration of the period.
@@ -136,34 +139,35 @@ class FuncPath:
         self.u = self.periodic_caliberate(new_u)
         self.v = self.periodic_caliberate(new_v)
 
+        self.current_iteration += 1
 
-    def arc_length(self):
+
+    def curve_length(self):
         # the path is parametrized by arclength??
-        """Calculate arc length of path
+        """Calculate curve length of path
         
         Returns
         -------
         float
         """
 
-        N = self.u.size - 1 # number of intervals in the path
-        delta = 1/N
-        delta2 = 2/N
+        delta = 1/self.N
+        delta2 = 2/self.N
         
-        v_diff_0 = periodic_op_scalar(th[1], th[0], operator.sub, period)
-        u_diff_0 = periodic_op_scalar(ph[1], ph[0], operator.sub, period)
-        u_diff_end = periodic_op_scalar(ph[-1], ph[-2], operator.sub, period)
-        v_diff_end = periodic_op_scalar(th[-1], th[-2], operator.sub, period)
+        v_diff_0 = self.periodic_op_scalar(self.v[1], self.v[0], operator.sub)
+        u_diff_0 = self.periodic_op_scalar(self.u[1], self.u[0], operator.sub)
+        u_diff_end = self.periodic_op_scalar(self.u[-1], self.u[-2], operator.sub)
+        v_diff_end = self.periodic_op_scalar(self.v[-1], self.v[-2], operator.sub)
 
-        temp1 = np.sqrt( ( self.a * v_diff_0 / delta )**2 + ( (self.c + self.a*np.cos(v[0])) * u_diff_0 / delta )**2)
-        temp2 = np.sqrt( ( self.a * v_diff_end / delta )**2 + ( (self.c + self.a*np.cos(v[0])) * u_diff_end / delta )**2)
+        temp1 = np.sqrt( ( self.a * v_diff_0 / delta )**2 + ( (self.c + self.a*np.cos(self.v[0])) * u_diff_0 / delta )**2)
+        temp2 = np.sqrt( ( self.a * v_diff_end / delta )**2 + ( (self.c + self.a*np.cos(self.v[0])) * u_diff_end / delta )**2)
         sum = (temp1 + temp2)/2
 
         for i in range(1,N):
-            v_diff_i = periodic_op_sc(v[i+1], v[i-1], operator.sub, period)
-            u_diff_i = periodic_op_sc(u[i+1], u[i-1], operator.sub, period)
+            v_diff_i = self.periodic_op_scalar(self.v[i+1], self.v[i-1], operator.sub)
+            u_diff_i = self.periodic_op_scalar(self.u[i+1], self.u[i-1], operator.sub)
 
-            sum += np.sqrt( ( self.a * v_diff_i / delta2 )**2 + ( (self.c + self.a*np.cos(v[i])) * u_diff_i / delta2 )**2)
+            sum += np.sqrt( ( self.a * v_diff_i / delta2 )**2 + ( (self.c + self.a*np.cos(self.v[i])) * u_diff_i / delta2 )**2)
 
         return sum * delta
 

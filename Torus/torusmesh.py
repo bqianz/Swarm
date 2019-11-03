@@ -106,26 +106,26 @@ class TorusMesh:
 
 		return [path1, path2, path3]
 
-	def store_grid():
-		matfile = 'grid.mat'
-		n = self.n
+	# def store_grid(self):
+	# 	matfile = 'grid.mat'
+	# 	n = self.n
 
-		d = np.zeros([half, n, n], float)
-		paths = np.zeros([half,n,n], FuncPaths)
+	# 	d = np.zeros(self.[half, n, n], float)
+	# 	paths = np.zeros([self.half,n,n], FuncPaths)
 
-		# start = process_time()
-		# generate d
-		for i in range(half):
-			start = (i,0)
-			for j in range(n):
-				for k in range(n):
-					end = (j,k)
-					d[i,j,k] = distance(start,end,n,temp)
-				print("i,j = " + str(i) + ", " + str(j))
-				# print(process_time())
+	# 	# start = process_time()
+	# 	# generate d
+	# 	for i in range(half):
+	# 		start = (i,0)
+	# 		for j in range(n):
+	# 			for k in range(n):
+	# 				end = (j,k)
+	# 				d[i,j,k] = distance(start,end,n,temp)
+	# 			print("i,j = " + str(i) + ", " + str(j))
+	# 			# print(process_time())
 
-		scipy.io.savemat(matfile, mdict={'distance': d, 'paths': paths})
-		return matfile
+	# 	scipy.io.savemat(matfile, mdict={'distance': d, 'paths': paths})
+	# 	return matfile
 
 
 	def draw_torus(self):

@@ -6,9 +6,6 @@ from dash.dependencies import Input, Output, State
 import plotly.graph_objects as go
 import scipy.io
 
-from torusmesh import TorusMesh
-from funcpath import FuncPath
-
 # read data
 matdata = scipy.io.loadmat('dash_demo_data.mat')
 x_t, y_t, z_t =  matdata['torus_data']
@@ -25,8 +22,7 @@ fig = go.Figure(
     showscale = False
     )],
     layout=go.Layout(
-        uirevision=1,
-        height = 500
+        uirevision=1
 		)
     )
 

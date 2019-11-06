@@ -12,10 +12,24 @@ class FuncPath:
     ----------
     u : numpy.ndarray
         Array of values between 0 and 2pi in toroidal direction
+
     v: numpy.ndarray
         Array of values between 0 and 2pi in poloidal direction
+
     period: float
         Value 2pi. Period of Torus parameters
+
+    length: int
+        length of u
+
+    current_iteration:int
+        how many iteractions has this path gone through since the initial guess
+
+    c : float
+    a : float
+        coeffients of torus parametrization. e.g x = (c + a*cos(v)) * cos(u)
+
+    
 
 
     Methods

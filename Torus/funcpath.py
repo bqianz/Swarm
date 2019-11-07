@@ -42,8 +42,18 @@ class FuncPath:
         Recalibrate array with respect to the period
     functional_iteration()
         Executes one round of functional iteration.
-    arc_length()
+    curve_length()
         Calculate arc length of path
+    tor2cart()
+        Calculate cartesian coordinates from toroidal coordinates
+    draw_path(ax, prev_path=None)
+        Draw path on existing matplotlib figure     
+    plotly_draw_path_go(fig)
+        Draw path on existing Dash figure, graph_objects style
+    plotly_draw_path(fig)
+        Draw path on existing Dash figure, dictionary style
+    plotly_update_path(i, fig)
+        Update path on Dash figure, dictionary style
     """
 
     period = 2 * np.pi
@@ -187,12 +197,21 @@ class FuncPath:
 
 
     def tor2cart(self):
+        """Calculate cartesian coordinates from toroidal coordinates
+
+        Returns
+        -------
+        Array of float
+        """
         x = (self.c + self.a*np.cos(self.v)) * np.cos(self.u)
         y = (self.c + self.a*np.cos(self.v)) * np.sin(self.u)
         z = self.a * np.sin(self.v)
         return x, y, z
 
-    def draw_path(self, ax, prev_path=None): # draw path on existing figure
+    def draw_path(self, ax, prev_path=None): # 
+        """
+        Draw path on existing matplotlib figure       
+        """
         if prev_path is not None:
             prev_path.remove()
 
@@ -200,15 +219,18 @@ class FuncPath:
         return ax.plot(x, y, z)
 
     def plotly_draw_path_go(self,fig):
+        """Draw path on existing Dash figure, graph_objects style"""
         x, y, z = self.tor2cart()
         fig.add_trace(go.Scatter3d(x=x, y=y, z=z, mode='lines', name='lines'))
 
     def plotly_draw_path(self, fig):
+        """Draw path on existing Dash figure, dictionary style"""
         x, y, z = self.tor2cart()
         new = {'mode': 'lines', 'name': 'lines', 'x': x, 'y': y, 'z': z, 'type': 'scatter3d'}
         fig['data'].append(new)
 
     def plotly_update_path(self, i, fig):
+        """Update path on Dash figure, dictionary style"""
         x, y, z = self.tor2cart()
         new = {'mode': 'lines', 'name': 'lines', 'x': x, 'y': y, 'z': z, 'type': 'scatter3d'}
         fig['data'][i+1] = new

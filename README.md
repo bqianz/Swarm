@@ -2,7 +2,7 @@ This is the code repository for the research project __Self-organization on Riem
 
 The code contains particle simulations on the sphere, hyperbolic sphere, and torus.
 
-## Interactive plot web app written in Python using Dash by Plotly ##
+## Interactive plot using Dash by Plotly for Python ##
 View functional iteration on an initially estimated path between two points on the Torus, converging to the shortest geodesic connecting the points.
 
 [Web app](https://func-it-app.herokuapp.com/)

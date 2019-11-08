@@ -201,7 +201,7 @@ class FuncPath:
 
         Returns
         -------
-        Array of float
+        x, y, z : Array of float
         """
         x = (self.c + self.a*np.cos(self.v)) * np.cos(self.u)
         y = (self.c + self.a*np.cos(self.v)) * np.sin(self.u)

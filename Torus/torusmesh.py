@@ -13,11 +13,14 @@ class TorusMesh:
 	n: int
 		fine-ness of mesh
 	h: float
-		2pi / n - the grid size
+		grid size according to n
 	half: int
 		half of n
 	linear: numpy.ndarray
 		linear mesh point values
+	c : float
+    a : float
+        coeffients of torus parametrization. e.g x = (c + a*cos(v)) * cos(u)
 	
 	"""
 
@@ -36,12 +39,31 @@ class TorusMesh:
 
 
 	def tor2cart(self):
+		"""Calculate cartesian coordinates from toroidal coordinates
+
+        Returns
+        -------
+        x, y, z : Array of float
+        """
+
 		x = (self.c + self.a * np.cos(self.v)) * np.cos(self.u)
 		y = (self.c + self.a * np.cos(self.v)) * np.sin(self.u)
 		z = self.a * np.sin(self.v)
 		return x, y, z
 
-	def shortest_segment(self,a,b): # return shortest path between a and b with mod n
+	def shortest_segment(self,a,b):
+		"""Return shortest sequence from a to b with mod n.
+
+		Parameters
+		----------
+		a: int
+		b: int
+			integer between [0,n)
+		
+		Returns
+		-------
+		list
+		"""
 		if a==b:
 			return []
 		s = np.sign(b-a)
@@ -52,7 +74,21 @@ class TorusMesh:
 			return list(temp % self.n)
 
 
-	def both_segments(self,a,b): # what does this do again?
+	def both_segments(self,a,b):
+		"""Return both possible sequences from a to b with mod n.
+		For example, if a = 1, b = 3, n = 5, then the function returns
+		[[1,2,3],[1,0,4,3]]
+
+		Parameters
+		----------
+		a: int
+		b: int
+			integer between [0,n)
+		
+		Returns
+		-------
+		array of two lists
+		"""
 		if a==b:
 			return [[],[]]
 		s = np.sign(b-a)
@@ -60,7 +96,20 @@ class TorusMesh:
 
 		return [list(temp), list(np.arange(a,b-s*self.n,-s) % self.n)]
 
-	def initial_path(self, start, end): # generate initial path from two points on the mesh
+	def initial_path(self, start, end): # 
+		"""Generate three initial paths between two given points on the mesh.
+
+		Parameters
+		----------
+		start : tuple of lenght 2, data type int
+		end : tuple of lenght 2, data type int
+			For example, if integer fine-ness n = 20, then elements of tuple can be integers in [0,20)
+
+		Returns
+		-------
+		path1, path2, path3: array of FuncPath objects (see funcpath.py)
+		"""
+
 
 		u_a = start[0]
 		v_a = start[1]
@@ -129,7 +178,12 @@ class TorusMesh:
 
 
 	def draw_torus(self):
-		# draw the mesh
+		"""Draw torus as a surface on new figure
+
+		Returns
+		-------
+		fig, ax: matplotlib variables
+		"""
 		x, y, z = self.tor2cart()
 
 		fig = plt.figure()
@@ -141,16 +195,38 @@ class TorusMesh:
 		return fig, ax
 
 	def save_data(self):
+		"""Saves cartesian data of torus surface into a file 'torus_data.mat',
+		under variable name 'xyz', in format of a tuple of three numpy arrays.
+		"""
 		x, y, z = self.tor2cart()
 		matfile = 'torus_data.mat'
 		scipy.io.savemat(matfile, mdict={'xyz': (x,y,z)})
 
 	def plotly_draw_from_data(self, filename):
+		"""Draw torus surface onto new Dash figure from precalculated data.
+
+		Parameters
+		----------
+		filename: string
+			name of file where torus surface data is stored.
+		
+
+		Returns
+		-------
+		Dash graph_objects figure
+		"""
 		matdata = scipy.io.loadmat(filename)
 		x,y,z =  matdata['xyz']
 		return go.Figure(data=[go.Surface(x=x, y=y, z=z, opacity=0.50)])
 
 	def plotly_draw_go(self):
+		"""
+		Draw torus surface onto new Dash figure, graph_objects style.
+
+		Returns
+		-------
+		Dash graph_objects figure
+		"""
 		x, y, z = self.tor2cart()
 		return go.Figure(
 			data=[go.Surface(x=x, y=y, z=z, opacity=0.50)],
@@ -160,6 +236,13 @@ class TorusMesh:
 		)
 
 	def plotly_draw(self):
+		"""
+		Draw torus surface onto new Dash figure, dictionary style.
+
+		Returns
+		-------
+		Dash figure
+		"""
 		x, y, z = self.tor2cart()
 		return {
 			"data": [{"type": "surface",

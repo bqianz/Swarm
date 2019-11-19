@@ -187,7 +187,7 @@ class FuncPath:
         temp2 = np.sqrt( ( self.a * v_diff_end / delta )**2 + ( (self.c + self.a*np.cos(self.v[0])) * u_diff_end / delta )**2)
         sum = (temp1 + temp2)/2
 
-        for i in range(1,N):
+        for i in range(1,self.N):
             v_diff_i = self.periodic_op_scalar(self.v[i+1], self.v[i-1], operator.sub)
             u_diff_i = self.periodic_op_scalar(self.u[i+1], self.u[i-1], operator.sub)
 

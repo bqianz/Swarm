@@ -13,7 +13,7 @@ if __name__ == "__main__":
 
 	# indices of starting and end point, indices between 0 and n-1
 	start = (0,0)
-	end = (5,5)
+	end = (14,0)
 
 	# draw torus
 	fig, ax = torus.draw_torus()

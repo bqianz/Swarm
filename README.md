@@ -7,7 +7,7 @@ View functional iteration on an initially estimated path between two points on t
 
 [Web app](https://func-it-app.herokuapp.com/)
 
-！[alt text](https://github.com/bqianz/Swarm/blob/master/Torus/webapp.png "Web App Screenshot")
+![alt text](https://github.com/bqianz/Swarm/blob/master/Torus/webapp.png "Web App Screenshot")
 
 ## Paper published in Journal of Geometric Mechanics ##
 
